@@ -226,8 +226,8 @@ Bu proje MIT lisansı altında lisanslanmıştır.
 ## 📞 **İletişim**
 
 - **Geliştirici**: Beyza Karapıçak
-- **Email**: [email]
-- **GitHub**: [github-username]
+- **Email**: contact.karapicak@gmail.com
+- **GitHub**: [github.com/beyzakrp](https://github.com/beyzakrp)
 
 ---
 
