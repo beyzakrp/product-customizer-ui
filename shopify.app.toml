@@ -1,0 +1,32 @@
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+
+client_id = "f1c42fe6630285441b2264d62361d0a8"
+name = "product-customizer-ui"
+handle = "product-customizer-ui"
+application_url = "https://x-tcp-eyes-matches.trycloudflare.com"
+embedded = true
+
+[build]
+include_config_on_deploy = true
+automatically_update_urls_on_dev = true
+
+[webhooks]
+api_version = "2025-07"
+
+  [[webhooks.subscriptions]]
+  topics = [ "app/uninstalled" ]
+  uri = "/webhooks/app/uninstalled"
+
+  [[webhooks.subscriptions]]
+  topics = [ "app/scopes_update" ]
+  uri = "/webhooks/app/scopes_update"
+
+[access_scopes]
+# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
+scopes = "write_products,read_products,write_product_listings,read_product_listings"
+
+[auth]
+redirect_urls = ["https://x-tcp-eyes-matches.trycloudflare.com/auth/callback", "https://x-tcp-eyes-matches.trycloudflare.com/auth/shopify/callback", "https://x-tcp-eyes-matches.trycloudflare.com/api/auth/callback"]
+
+[pos]
+embedded = false
