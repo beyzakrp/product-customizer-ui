@@ -18,6 +18,9 @@ import {
   EmptyState,
   Banner,
   Tabs,
+  TextField,
+  Checkbox,
+  BlockStack,
 } from "@shopify/polaris";
 import { authenticate } from "../shopify.server";
 
@@ -33,6 +36,7 @@ export async function loader({ request }) {
             title
             handle
             status
+            tags
             createdAt
             updatedAt
             metafields(namespace: "custom", first: 10) {
@@ -69,10 +73,10 @@ export async function action({ request }) {
   const customizerData = formData.get("customizerOptions");
 
   if (!productId || !customizerData) {
-    return json({ success: false, error: "Eksik veri" });
+    return json({ success: false, error: "Missing data" });
   }
 
-  console.log("Action received:", { productId, customizerData });
+  console.log("Action received:", { productId, customizerData }); 
 
   try {
     const productGid = `gid://shopify/Product/${productId}`;
@@ -107,9 +111,9 @@ export async function action({ request }) {
       throw new Error(updateData.data.metafieldsSet.userErrors[0].message);
     }
 
-    return json({ success: true, message: "Customizer seçenekleri kaydedildi" });
+    return json({ success: true, message: "Customizer options saved" });
   } catch (error) {
-    console.error("Metafield kaydetme hatası:", error);
+    console.error("Metafield save error:", error);
     return json({ success: false, error: error.message });
   }
 }
@@ -121,6 +125,8 @@ export default function Products() {
   const navigate = useNavigate();
   const location = useLocation();
   const [expanded, setExpanded] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterByTag, setFilterByTag] = useState(false);
 
   // URL'den product parametresini oku ve state'i güncelle
   useEffect(() => {
@@ -130,11 +136,17 @@ export default function Products() {
   }, [location.search]);
   const fetcher = useFetcher();
 
-  const rows = products.map((product) => [
+  const filteredProducts = products.filter(product => {
+    const titleMatch = product.title.toLowerCase().includes(searchTerm.toLowerCase());
+    const tagMatch = !filterByTag || (product.tags && product.tags.includes('product-customizer'));
+    return titleMatch && tagMatch;
+  });
+
+  const rows = filteredProducts.map((product) => [
     product.title,
     product.handle,
     <Badge status={product.status === "ACTIVE" ? "success" : "attention"}>
-      {product.status === "ACTIVE" ? "Aktif" : "Pasif"}
+      {product.status === "ACTIVE" ? "Active" : "Inactive"}
     </Badge>,
     new Date(product.createdAt).toLocaleDateString("tr-TR"),
     <Button onClick={() => {
@@ -147,20 +159,20 @@ export default function Products() {
       }
       navigate(`?${params.toString()}`, { replace: true });
       setExpanded(newId ? product.id : null);
-    }} variant="primary" size="slim">{expanded===product.id?"Kapat":"Düzenle"}</Button>,
+    }} variant="primary" size="slim">{expanded===product.id?"Close":"Edit"}</Button>,
   ]);
 
   if (products.length === 0) {
     return (
-      <Page title="Ürünler">
+      <Page title="Products">
         <Layout>
           <Layout.Section>
             <Card>
               <EmptyState
-                heading="Henüz ürün bulunmuyor"
+                heading="No products found"
                 image="https://cdn.shopify.com/s/files/1/0262/4071/2726/files/emptystate-files.png"
               >
-                <p>Mağazanızda henüz ürün bulunmuyor. Ürün ekledikten sonra burada görünecektir.</p>
+                <p>You do not have any products yet. After adding a product, it will appear here.</p>
               </EmptyState>
             </Card>
           </Layout.Section>
@@ -171,15 +183,15 @@ export default function Products() {
 
   return (
     <Page 
-      title="Ürünler" 
-      subtitle={`${products.length} ürün bulundu`}
+      title="Products" 
+      subtitle={`${products.length} products found`}
       backAction={{
-        content: "Ana Sayfa",
+        content: "Home",
         url: "/app",
       }}
     >
       {(fetcher.data?.success || actionData?.success) && (
-        <Banner tone="success" title="Kaydedildi">Renk seçenekleri başarıyla güncellendi.</Banner>
+        <Banner tone="success" title="Saved">Color options have been successfully updated.</Banner>
       )}
       {(fetcher.data?.error || actionData?.error) && (
         <Banner tone="critical" title="Hata">{fetcher.data?.error || actionData.error}</Banner>
@@ -188,16 +200,35 @@ export default function Products() {
       <Layout>
         <Layout.Section>
           <Card>
-            <DataTable
-              columnContentTypes={['text', 'text', 'text', 'text', 'text']}
-              headings={['Ürün Adı', 'Handle', 'Durum', 'Oluşturulma Tarihi', 'İşlemler']}
-              rows={rows}
-              hoverable
-            />
+            <BlockStack gap="400">
+              <div style={{ padding: '16px' }}>
+                <BlockStack gap="400">
+                  <Text variant="headingMd">Filter and Search</Text>
+                  <TextField
+                    label="Product Name"
+                    value={searchTerm}
+                    onChange={setSearchTerm}
+                    autoComplete="off"
+                    placeholder="Search by product name..."
+                  />
+                  <Checkbox
+                    label="Show only customizable products (products with product-customizer tag)"
+                    checked={filterByTag}
+                    onChange={(checked) => setFilterByTag(checked)}
+                  />
+                </BlockStack>
+              </div>
+              <DataTable
+                columnContentTypes={['text', 'text', 'text', 'text', 'text']}
+                headings={['Product Name', 'Handle', 'Status', 'Created At', 'Actions']}
+                rows={rows}
+                hoverable
+              />
+            </BlockStack>
           </Card>
         </Layout.Section>
 
-        {/* Ürün detay kartları */}
+        {/* Product detail cards */}
         {products.map((product) => (
           <Layout.Section key={product.id}>
             
@@ -220,7 +251,7 @@ export default function Products() {
       </Layout>
       <Layout.Section>
         <Button onClick={() => setShowDebug(!showDebug)} variant="tertiary">
-          {showDebug ? "Debug Gizle" : "Debug Göster"}
+          {showDebug ? "Hide Debug" : "Show Debug"}
         </Button>
         {showDebug && (
           <Card>

@@ -43,9 +43,9 @@ export default function GrommetOptionsEditor({ initialValue = "[]", onSave, onCa
   const validate = () => {
     const newErrors = {};
     options.forEach((opt, idx) => {
-      if (!opt.value || !opt.value.trim()) newErrors[`${idx}-value`] = "Grommet tipi gerekli";
-      if (!/^#([0-9A-Fa-f]{3}){1,2}$/.test(opt.hex)) newErrors[`${idx}-hex`] = "Geçersiz HEX";
-      if (isNaN(parseFloat(opt.price))) newErrors[`${idx}-price`] = "Fiyat sayısal olmalı";
+      if (!opt.value || !opt.value.trim()) newErrors[`${idx}-value`] = "Grommet type is required";
+      if (!/^#([0-9A-Fa-f]{3}){1,2}$/.test(opt.hex)) newErrors[`${idx}-hex`] = "Invalid HEX";
+      if (isNaN(parseFloat(opt.price))) newErrors[`${idx}-price`] = "Price must be a number";
     });
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -81,7 +81,7 @@ export default function GrommetOptionsEditor({ initialValue = "[]", onSave, onCa
             </div>
             <div style={{ flex: 1, marginRight: 8 }}>
               <TextField
-                label="Fiyat"
+                label="Price"
                 type="number"
                 value={String(opt.price)}
                 onChange={(v) => updateOption(idx, "price", v)}
@@ -90,7 +90,7 @@ export default function GrommetOptionsEditor({ initialValue = "[]", onSave, onCa
             </div>
             <div style={{ alignSelf: "flex-end" }}>
               <Button tone="critical" variant="tertiary" onClick={() => removeOption(idx)}>
-                Sil
+                Delete
               </Button>
             </div>
           </InlineStack>
@@ -98,19 +98,19 @@ export default function GrommetOptionsEditor({ initialValue = "[]", onSave, onCa
       ))}
 
       {options.length === 0 && (
-        <Banner tone="info">Henüz grommet eklenmemiş</Banner>
+        <Banner tone="info">No grommet added yet.</Banner>
       )}
 
       <Button onClick={addOption} variant="tertiary">
-        Grommet Ekle
+        Add Grommet
       </Button>
 
       <InlineStack align="end">
         <Button onClick={onCancel} variant="tertiary">
-          Vazgeç
+          Cancel
         </Button>
         <Button variant="primary" onClick={handleSave}>
-          Kaydet
+          Save
         </Button>
       </InlineStack>
     </BlockStack>

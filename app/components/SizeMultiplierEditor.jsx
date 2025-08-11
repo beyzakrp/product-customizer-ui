@@ -26,7 +26,7 @@ export default function SizeMultiplierEditor({ initialValue = "1.0", onSave, onC
 
   const validate = () => {
     if (isNaN(parseFloat(multiplier))) {
-      setError("Geçerli bir sayı giriniz");
+      setError("Please enter a valid number");
       return false;
     }
     setError("");
@@ -42,7 +42,7 @@ export default function SizeMultiplierEditor({ initialValue = "1.0", onSave, onC
   return (
     <BlockStack gap="400">
       <Banner tone="info">
-        <p>Size multiplier değeri, boyut hesaplamalarında kullanılan çarpan değeridir.</p>
+        <p>Size multiplier value is the multiplier used in size calculations.</p>
       </Banner>
       
       <TextField
@@ -55,15 +55,15 @@ export default function SizeMultiplierEditor({ initialValue = "1.0", onSave, onC
           setError("");
         }}
         error={error}
-        helpText="Örnek: 30.0 veya 1.5"
+        helpText="Example: 30.0 or 1.5"
       />
 
       <InlineStack align="end">
         <Button onClick={onCancel} variant="tertiary">
-          Vazgeç
+          Cancel
         </Button>
         <Button variant="primary" onClick={handleSave}>
-          Kaydet
+          Save
         </Button>
       </InlineStack>
     </BlockStack>

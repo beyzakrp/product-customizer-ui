@@ -26,13 +26,13 @@ export default function MetafieldEditor({ initialValue, onSave, onCancel }) {
   const [deleteIndex, setDeleteIndex] = useState(null);
 
   const fieldTypes = [
-    { label: "Renk", value: "color" },
-    { label: "Header Tipi", value: "header" },
+    { label: "Color", value: "color" },
+    { label: "Header Type", value: "header" },
     { label: "Grommet", value: "grommet" },
-    { label: "Boyut", value: "size" },
-    { label: "Metin", value: "text" },
-    { label: "Sayı", value: "number" },
-    { label: "Resim URL", value: "image" },
+    { label: "Size", value: "size" },
+    { label: "Text", value: "text" },
+    { label: "Number", value: "number" },
+    { label: "Image URL", value: "image" },
   ];
 
   const addField = useCallback(() => {
@@ -44,7 +44,6 @@ export default function MetafieldEditor({ initialValue, onSave, onCancel }) {
     const newFields = [...fields];
     newFields[index] = { ...newFields[index], [field]: value };
     
-    // Eğer type değiştiyse, options'ı varsayılan değerlerle güncelle
     if (field === "type") {
       newFields[index].options = getDefaultOptionsForType(value);
       newFields[index].defaultValue = "";
@@ -52,7 +51,7 @@ export default function MetafieldEditor({ initialValue, onSave, onCancel }) {
     
     setFields(newFields);
     
-    // Hata mesajını temizle
+
     if (errors[`${index}-${field}`]) {
       const newErrors = { ...errors };
       delete newErrors[`${index}-${field}`];
@@ -123,7 +122,7 @@ export default function MetafieldEditor({ initialValue, onSave, onCancel }) {
           onChange={(value) => updateField(index, "key", value)}
           error={errors[`${index}-key`]}
           autoComplete="off"
-          helpText="Bu key, JSON'da kullanılacak benzersiz tanımlayıcıdır"
+          helpText="This key will be defined in the JSON. It is unique identifier."
         />
         <Select
           label="Tip"
@@ -140,12 +139,12 @@ export default function MetafieldEditor({ initialValue, onSave, onCancel }) {
           {baseInputs}
           <div style={{ marginTop: "16px" }}>
             <InlineStack align="space-between">
-              <Text variant="headingMd" as="h3">Seçenekler</Text>
+              <Text variant="headingMd" as="h3">Options</Text>
               <Button
                 onClick={() => addOption(index)}
                 variant="tertiary"
               >
-                Seçenek Ekle
+                Add Option
               </Button>
             </InlineStack>
             
@@ -163,7 +162,7 @@ export default function MetafieldEditor({ initialValue, onSave, onCancel }) {
                   </div>
                   <div style={{ flex: 1, marginRight: "16px" }}>
                     <TextField
-                      label="Değer"
+                      label="Value"
                       value={option.value || ""}
                       onChange={(value) => updateOption(index, optionIndex, "value", value)}
                       error={errors[`${index}-option-${optionIndex}-value`]}
@@ -176,7 +175,7 @@ export default function MetafieldEditor({ initialValue, onSave, onCancel }) {
                       variant="tertiary"
                       tone="critical"
                     >
-                      Sil
+                      Delete
                     </Button>
                   </div>
                 </InlineStack>
@@ -197,7 +196,7 @@ export default function MetafieldEditor({ initialValue, onSave, onCancel }) {
       <>
         {baseInputs}
         <TextField
-          label="Varsayılan Değer"
+          label="Default Value"
           value={field.defaultValue || ""}
           onChange={(value) => updateField(index, "defaultValue", value)}
           autoComplete="off"
@@ -213,10 +212,10 @@ export default function MetafieldEditor({ initialValue, onSave, onCancel }) {
           <Card sectioned>
             <div style={{ textAlign: "center", padding: "40px" }}>
               <Text variant="headingMd" as="h2">
-                Henüz hiç alan eklenmemiş
+                No fields added yet.
               </Text>
               <Text variant="bodyMd" as="p" tone="subdued">
-                Ürün özelleştirme seçeneklerini eklemek için aşağıdaki butona tıklayın.
+                Add customization options by clicking the below button.
               </Text>
             </div>
           </Card>
@@ -226,14 +225,14 @@ export default function MetafieldEditor({ initialValue, onSave, onCancel }) {
               <BlockStack gap="loose">
                 <InlineStack align="space-between">
                   <Text variant="headingMd" as="h3">
-                    Alan {index + 1}
+                    Field {index + 1}
                   </Text>
                   <Button
                     onClick={() => removeField(index)}
                     variant="tertiary"
                     tone="critical"
                   >
-                    Sil
+                    Delete
                   </Button>
                 </InlineStack>
                 
@@ -250,17 +249,17 @@ export default function MetafieldEditor({ initialValue, onSave, onCancel }) {
           variant="tertiary"
           fullWidth
         >
-          Yeni Alan Ekle
+          Add New Field
         </Button>
 
         <InlineStack align="end" gap="tight">
           {onCancel && (
             <Button onClick={onCancel} variant="tertiary">
-              İptal
+              Cancel
             </Button>
           )}
           <Button onClick={handleSave} primary>
-            Kaydet
+            Save
           </Button>
         </InlineStack>
       </BlockStack>
@@ -268,22 +267,22 @@ export default function MetafieldEditor({ initialValue, onSave, onCancel }) {
       <Modal
         open={showDeleteModal}
         onClose={() => setShowDeleteModal(false)}
-        title="Alanı Sil"
+        title="Delete Field"
         primaryAction={{
-          content: "Sil",
+          content: "Delete",
           destructive: true,
           onAction: confirmDelete,
         }}
         secondaryActions={[
           {
-            content: "İptal",
+            content: "Cancel",
             onAction: () => setShowDeleteModal(false),
           },
         ]}
       >
         <Modal.Section>
           <TextContainer>
-            <p>Bu alanı silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.</p>
+            <p>Are you sure you want to delete? This action cannot be undone.</p>
           </TextContainer>
         </Modal.Section>
       </Modal>

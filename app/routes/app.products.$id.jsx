@@ -44,7 +44,7 @@ export async function loader({ params, request }) {
     const data = await response.json();
     
     if (!data.data.product) {
-      throw new Error("Ürün bulunamadı");
+      throw new Error("Product not found");
     }
 
     const product = data.data.product;
@@ -58,7 +58,7 @@ export async function loader({ params, request }) {
     });
   } catch (error) {
     return json({ 
-      error: error.message || "Ürün yüklenirken hata oluştu",
+      error: error.message || "Error loading product",
       success: false 
     });
   }
@@ -71,7 +71,7 @@ export async function action({ request, params }) {
   const colorValue = formData.get("colorOptions");
 
   try {
-    // Mevcut metafield var mı kontrol et
+    // Check if the metafield exists
     const response = await admin.graphql(
       `query {
         product(id: "gid://shopify/Product/${id}") {
@@ -91,7 +91,7 @@ export async function action({ request, params }) {
     const metafields = data.data.product.metafields.edges.map(e=>e.node);
     const colorMetafield = metafields.find(m=>m.key==="color_options");
 
-    // Güncelle veya oluştur
+    // Update or create
     if (colorMetafield) {
       const updateResponse = await admin.graphql(
         `mutation {
@@ -146,11 +146,11 @@ export async function action({ request, params }) {
       }
     }
 
-    return json({ success: true, message: "Özelleştirme seçenekleri başarıyla kaydedildi" });
+    return json({ success: true, message: "Customization options saved" });
   } catch (error) {
     return json({ 
       success: false, 
-      error: error.message || "Kaydetme sırasında hata oluştu" 
+      error: error.message || "Error saving" 
     });
   }
 }
@@ -165,7 +165,7 @@ export default function ProductDetail() {
 
   if (!success) {
     return (
-      <Page title="Hata">
+      <Page title="Error">
         <Layout>
           <Layout.Section>
             <Card>
@@ -189,9 +189,9 @@ export default function ProductDetail() {
   return (
     <Page 
       title={product.title}
-      subtitle="Özelleştirme Seçenekleri"
+      subtitle="Customization Options"
       backAction={{
-        content: "Ürünler",
+        content: "Products",
         url: `/app/products${location.search}`,
       }}
     >
@@ -209,7 +209,7 @@ export default function ProductDetail() {
                   </Text>
                 </div>
                 <Badge status={product.status === "ACTIVE" ? "success" : "attention"}>
-                  {product.status === "ACTIVE" ? "Aktif" : "Pasif"}
+                  {product.status === "ACTIVE" ? "Active" : "Inactive"}
                 </Badge>
               </InlineStack>
             </div>
@@ -218,7 +218,7 @@ export default function ProductDetail() {
 
         <Layout.Section>
           <Button onClick={() => setShowDebug(!showDebug)} variant="tertiary">
-            {showDebug ? "Debug Gizle" : "Debug Göster"}
+            {showDebug ? "Hide Debug" : "Show Debug"}
           </Button>
           {showDebug && (
             <Card>
@@ -233,14 +233,14 @@ export default function ProductDetail() {
           <Card>
             <div style={{ padding: "20px" }}>
               <Text variant="headingMd" as="h3" style={{ marginBottom: "16px" }}>
-                Özelleştirme Seçenekleri
+                Customization Options
               </Text>
               
               {isSubmitting && (
                 <div style={{ textAlign: "center", padding: "20px" }}>
                   <Spinner size="large" />
                   <Text variant="bodyMd" as="p" style={{ marginTop: "8px" }}>
-                    Kaydediliyor...
+                    Saving...
                   </Text>
                 </div>
               )}

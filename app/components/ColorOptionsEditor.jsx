@@ -44,9 +44,9 @@ export default function ColorOptionsEditor({ initialValue = "[]", onSave, onCanc
   const validate = () => {
     const newErrors = {};
     options.forEach((opt, idx) => {
-      if (!opt.value || !opt.value.trim()) newErrors[`${idx}-value`] = "Label gerekli";
-      if (!/^#([0-9A-Fa-f]{3}){1,2}$/.test(opt.hex)) newErrors[`${idx}-hex`] = "Geçersiz HEX";
-      if (isNaN(parseFloat(opt.price))) newErrors[`${idx}-price`] = "Fiyat sayısal olmalı";
+      if (!opt.value || !opt.value.trim()) newErrors[`${idx}-value`] = "Label is required";
+      if (!/^#([0-9A-Fa-f]{3}){1,2}$/.test(opt.hex)) newErrors[`${idx}-hex`] = "Invalid HEX";
+      if (isNaN(parseFloat(opt.price))) newErrors[`${idx}-price`] = "Price must be a number";
     });
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -65,7 +65,7 @@ export default function ColorOptionsEditor({ initialValue = "[]", onSave, onCanc
           <InlineStack align="space-between">
             <div style={{ flex: 1, marginRight: 8 }}>
               <TextField
-                label="Renk"
+                label="Color"
                 value={opt.value}
                 onChange={(v) => updateOption(idx, "value", v)}
                 error={errors[`${idx}-value`]}
@@ -82,7 +82,7 @@ export default function ColorOptionsEditor({ initialValue = "[]", onSave, onCanc
             </div>
             <div style={{ flex: 1, marginRight: 8 }}>
               <TextField
-                label="Fiyat"
+                label="Price"
                 type="number"
                 value={String(opt.price)}
                 onChange={(v) => updateOption(idx, "price", v)}
@@ -91,7 +91,7 @@ export default function ColorOptionsEditor({ initialValue = "[]", onSave, onCanc
             </div>
             <div style={{ alignSelf: "flex-end" }}>
               <Button tone="critical" variant="tertiary" onClick={() => removeOption(idx)}>
-                Sil
+                Delete
               </Button>
             </div>
           </InlineStack>
@@ -99,19 +99,19 @@ export default function ColorOptionsEditor({ initialValue = "[]", onSave, onCanc
       ))}
 
       {options.length === 0 && (
-        <Banner tone="info">Henüz renk eklenmemiş</Banner>
+        <Banner tone="info">No color added yet.</Banner>
       )}
 
       <Button onClick={addOption} variant="tertiary">
-        Renk Ekle
+        Add Color
       </Button>
 
       <InlineStack align="end">
         <Button onClick={onCancel} variant="tertiary">
-          Vazgeç
+          Cancel
         </Button>
         <Button variant="primary" onClick={handleSave}>
-          Kaydet
+          Save
         </Button>
       </InlineStack>
     </BlockStack>

@@ -116,30 +116,26 @@ export default function Index() {
               <BlockStack gap="500">
                 <BlockStack gap="200">
                   <Text as="h2" variant="headingMd">
-                    Metafield JSON Editor'a Hoş Geldiniz! 🎉
+                    Welcome to Metafield JSON Editor! 
                   </Text>
                   <Text variant="bodyMd" as="p">
-                    Bu app ile Shopify ürünlerinizin metafield'larını JSON yazmadan, 
-                    kullanıcı dostu bir arayüzle düzenleyebilirsiniz. Ürün özelleştirme 
-                    seçeneklerini (renk, header tipi, grommet, boyut) kolayca yönetebilirsiniz.
+                    With this app, you can edit Shopify product metafields in a user-friendly interface without writing JSON. You can easily manage customization options (color, header type, grommet, size) for your products.
                   </Text>
                 </BlockStack>
                 <BlockStack gap="200">
                   <Text as="h3" variant="headingMd">
-                    Ürünlerinizi Yönetin
+                    Manage Products
                   </Text>
                   <Text as="p" variant="bodyMd">
-                    Mağazanızdaki tüm ürünleri görüntüleyin ve her ürün için 
-                    özelleştirme seçeneklerini düzenleyin. Metafield'lar otomatik 
-                    olarak JSON formatında kaydedilir.
+                    View all products and edit customization options for each product. Metafields are automatically saved in JSON format.
                   </Text>
                 </BlockStack>
                 <InlineStack gap="300">
                   <Button primary onClick={() => navigate(`/app/products${location.search}`)}>
-                    Ürünleri Görüntüle
+                    View Products
                   </Button>
                   <Button loading={isLoading} onClick={generateProduct} variant="tertiary">
-                    Test Ürünü Oluştur
+                    Create Test Product
                   </Button>
                 </InlineStack>
                 {fetcher.data?.product && (
@@ -185,108 +181,7 @@ export default function Index() {
               </BlockStack>
             </Card>
           </Layout.Section>
-          <Layout.Section variant="oneThird">
-            <BlockStack gap="500">
-              <Card>
-                <BlockStack gap="200">
-                  <Text as="h2" variant="headingMd">
-                    App template specs
-                  </Text>
-                  <BlockStack gap="200">
-                    <InlineStack align="space-between">
-                      <Text as="span" variant="bodyMd">
-                        Framework
-                      </Text>
-                      <Link
-                        url="https://remix.run"
-                        target="_blank"
-                        removeUnderline
-                      >
-                        Remix
-                      </Link>
-                    </InlineStack>
-                    <InlineStack align="space-between">
-                      <Text as="span" variant="bodyMd">
-                        Database
-                      </Text>
-                      <Link
-                        url="https://www.prisma.io/"
-                        target="_blank"
-                        removeUnderline
-                      >
-                        Prisma
-                      </Link>
-                    </InlineStack>
-                    <InlineStack align="space-between">
-                      <Text as="span" variant="bodyMd">
-                        Interface
-                      </Text>
-                      <span>
-                        <Link
-                          url="https://polaris.shopify.com"
-                          target="_blank"
-                          removeUnderline
-                        >
-                          Polaris
-                        </Link>
-                        {", "}
-                        <Link
-                          url="https://shopify.dev/docs/apps/tools/app-bridge"
-                          target="_blank"
-                          removeUnderline
-                        >
-                          App Bridge
-                        </Link>
-                      </span>
-                    </InlineStack>
-                    <InlineStack align="space-between">
-                      <Text as="span" variant="bodyMd">
-                        API
-                      </Text>
-                      <Link
-                        url="https://shopify.dev/docs/api/admin-graphql"
-                        target="_blank"
-                        removeUnderline
-                      >
-                        GraphQL API
-                      </Link>
-                    </InlineStack>
-                  </BlockStack>
-                </BlockStack>
-              </Card>
-              <Card>
-                <BlockStack gap="200">
-                  <Text as="h2" variant="headingMd">
-                    Next steps
-                  </Text>
-                  <List>
-                    <List.Item>
-                      Build an{" "}
-                      <Link
-                        url="https://shopify.dev/docs/apps/getting-started/build-app-example"
-                        target="_blank"
-                        removeUnderline
-                      >
-                        {" "}
-                        example app
-                      </Link>{" "}
-                      to get started
-                    </List.Item>
-                    <List.Item>
-                      Explore Shopify’s API with{" "}
-                      <Link
-                        url="https://shopify.dev/docs/apps/tools/graphiql-admin-api"
-                        target="_blank"
-                        removeUnderline
-                      >
-                        GraphiQL
-                      </Link>
-                    </List.Item>
-                  </List>
-                </BlockStack>
-              </Card>
-            </BlockStack>
-          </Layout.Section>
+          
         </Layout>
       </BlockStack>
     </Page>

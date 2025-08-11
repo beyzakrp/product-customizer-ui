@@ -43,8 +43,8 @@ export default function HeaderOptionsEditor({ initialValue = "[]", onSave, onCan
   const validate = () => {
     const newErrors = {};
     options.forEach((opt, idx) => {
-      if (!opt.value || !opt.value.trim()) newErrors[`${idx}-value`] = "Header tipi gerekli";
-      if (isNaN(parseFloat(opt.price))) newErrors[`${idx}-price`] = "Fiyat sayısal olmalı";
+      if (!opt.value || !opt.value.trim()) newErrors[`${idx}-value`] = "Header type is required";
+      if (isNaN(parseFloat(opt.price))) newErrors[`${idx}-price`] = "Price must be a number";
     });
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -63,7 +63,7 @@ export default function HeaderOptionsEditor({ initialValue = "[]", onSave, onCan
           <InlineStack align="space-between">
             <div style={{ flex: 1, marginRight: 8 }}>
               <TextField
-                label="Header Tipi"
+                label="Header Type"
                 value={opt.value}
                 onChange={(v) => updateOption(idx, "value", v)}
                 error={errors[`${idx}-value`]}
@@ -71,7 +71,7 @@ export default function HeaderOptionsEditor({ initialValue = "[]", onSave, onCan
             </div>
             <div style={{ flex: 1, marginRight: 8 }}>
               <TextField
-                label="Fiyat"
+                label="Price"
                 type="number"
                 value={String(opt.price)}
                 onChange={(v) => updateOption(idx, "price", v)}
@@ -80,7 +80,7 @@ export default function HeaderOptionsEditor({ initialValue = "[]", onSave, onCan
             </div>
             <div style={{ flex: 1, marginRight: 8 }}>
               <TextField
-                label="Resim URL"
+                label="Image URL"
                 value={opt.image_url}
                 onChange={(v) => updateOption(idx, "image_url", v)}
                 placeholder="https://example.com/image.jpg"
@@ -88,7 +88,7 @@ export default function HeaderOptionsEditor({ initialValue = "[]", onSave, onCan
             </div>
             <div style={{ alignSelf: "flex-end" }}>
               <Button tone="critical" variant="tertiary" onClick={() => removeOption(idx)}>
-                Sil
+                Delete
               </Button>
             </div>
           </InlineStack>
@@ -96,19 +96,19 @@ export default function HeaderOptionsEditor({ initialValue = "[]", onSave, onCan
       ))}
 
       {options.length === 0 && (
-        <Banner tone="info">Henüz header tipi eklenmemiş</Banner>
+        <Banner tone="info">No header types added yet.</Banner>
       )}
 
       <Button onClick={addOption} variant="tertiary">
-        Header Tipi Ekle
+        Add Header Type
       </Button>
 
       <InlineStack align="end">
         <Button onClick={onCancel} variant="tertiary">
-          Vazgeç
+          Cancel
         </Button>
         <Button variant="primary" onClick={handleSave}>
-          Kaydet
+          Save
         </Button>
       </InlineStack>
     </BlockStack>
