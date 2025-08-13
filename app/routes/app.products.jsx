@@ -1,5 +1,5 @@
 import { json } from "@remix-run/node";
-import { useLoaderData, Link, useLocation, useNavigate, useSubmit, useActionData, useFetcher } from "@remix-run/react";
+import { useLoaderData, Link, useLocation, useNavigate, useSubmit, useActionData, useFetcher, useOutletContext } from "@remix-run/react";
 import { useState, useEffect } from "react";
 import ColorOptionsEditor from "../components/ColorOptionsEditor";
 import HeaderOptionsEditor from "../components/HeaderOptionsEditor";
@@ -16,7 +16,6 @@ import {
   Text,
   InlineStack,
   EmptyState,
-  Banner,
   Tabs,
   TextField,
   Checkbox,
@@ -120,13 +119,14 @@ export async function action({ request }) {
 
 export default function Products() {
   const { products, pageInfo } = useLoaderData();
-  const actionData = useActionData();
   const [showDebug, setShowDebug] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const [expanded, setExpanded] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterByTag, setFilterByTag] = useState(false);
+  const fetcher = useFetcher();
+  const { showToast } = useOutletContext();
 
   // URL'den product parametresini oku ve state'i güncelle
   useEffect(() => {
@@ -134,7 +134,17 @@ export default function Products() {
     const productId = searchParams.get("product");
     setExpanded(productId);
   }, [location.search]);
-  const fetcher = useFetcher();
+
+  useEffect(() => {
+    if (fetcher.state === 'idle' && fetcher.data) {
+      if (fetcher.data.success) {
+        showToast("Customizer options saved");
+      } else if (fetcher.data.error) {
+        showToast(fetcher.data.error, true);
+      }
+    }
+  }, [fetcher.data, fetcher.state, showToast]);
+
 
   const filteredProducts = products.filter(product => {
     const titleMatch = product.title.toLowerCase().includes(searchTerm.toLowerCase());
@@ -150,16 +160,17 @@ export default function Products() {
     </Badge>,
     new Date(product.createdAt).toLocaleDateString("tr-TR"),
     <Button onClick={() => {
-      const newId = expanded===product.id ? null : product.id.split("/").pop();
+      const numericId = product.id.split("/").pop();
+      const isCurrentlyExpanded = expanded === numericId;
       const params = new URLSearchParams(location.search);
-      if (newId) {
-        params.set("product", newId);
-      } else {
+
+      if (isCurrentlyExpanded) {
         params.delete("product");
+      } else {
+        params.set("product", numericId);
       }
       navigate(`?${params.toString()}`, { replace: true });
-      setExpanded(newId ? product.id : null);
-    }} variant="primary" size="slim">{expanded===product.id?"Close":"Edit"}</Button>,
+    }} variant="primary" size="slim">{expanded === product.id.split("/").pop() ? "Close" : "Edit"}</Button>,
   ]);
 
   if (products.length === 0) {
@@ -190,13 +201,6 @@ export default function Products() {
         url: "/app",
       }}
     >
-      {(fetcher.data?.success || actionData?.success) && (
-        <Banner tone="success" title="Saved">Color options have been successfully updated.</Banner>
-      )}
-      {(fetcher.data?.error || actionData?.error) && (
-        <Banner tone="critical" title="Hata">{fetcher.data?.error || actionData.error}</Banner>
-      )}
-
       <Layout>
         <Layout.Section>
           <Card>
@@ -242,7 +246,11 @@ export default function Products() {
                     return optionsEdge?.node?.value || "[]";
                   })()}
                   onSave={(config)=> fetcher.submit({productId: product.id.split("/").pop(), customizerOptions: JSON.stringify(config)}, {method:"post"})}
-                  onCancel={()=> setExpanded(null)}
+                  onCancel={() => {
+                    const params = new URLSearchParams(location.search);
+                    params.delete("product");
+                    navigate(`?${params.toString()}`, { replace: true });
+                  }}
                 />
               </Layout.Section>
             )}

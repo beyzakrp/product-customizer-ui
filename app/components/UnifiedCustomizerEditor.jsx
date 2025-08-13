@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useCallback } from "react";
 import { computeTotalPrice } from "../utils/pricing";
 import {
   Card,
@@ -9,6 +9,10 @@ import {
   BlockStack,
   Checkbox,
   Select,
+  Page,
+  Tabs,
+  Box,
+  Text,
 } from "@shopify/polaris";
 
 function parseInitial(data) {
@@ -80,12 +84,11 @@ function createDefaultBlock(type) {
       type: "area",
       title: "Area",
       enabled: true,
-      unit: "cm",
+      unit: "inch",
       limits: {
-        width: { min: 50.8, max: 304.8 },
-        height: { min: 50.8, max: 1016 },
+        width: { min: 20, max: 120 },
       },
-      pricing: { mode: "multiplier", value: 100.0, per: "sqm" },
+      pricing: { mode: "multiplier", value: 10.0 },
     };
   }
   return {
@@ -101,6 +104,41 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
   const [newBlockType, setNewBlockType] = useState("picker");
   const [collapsed, setCollapsed] = useState(() => new Set());
   const [preview, setPreview] = useState({});
+  const [selectedTab, setSelectedTab] = useState(0);
+
+  const setBlocksAndUpdateStepOrder = useCallback((newBlocks) => {
+    const newStepOrder = newBlocks
+      .filter((b) => b.type !== "config")
+      .map((b) => b.id)
+      .filter(Boolean);
+
+    const configIndex = newBlocks.findIndex((b) => b.type === "config");
+    
+    if (configIndex !== -1) {
+      const newConfig = { ...newBlocks[configIndex], step_order: newStepOrder };
+      newBlocks[configIndex] = newConfig;
+    }
+    
+    setBlocks(newBlocks);
+  }, []);
+
+  const handleTabChange = useCallback(
+    (selectedTabIndex) => setSelectedTab(selectedTabIndex),
+    [],
+  );
+
+  const tabs = [
+    {
+      id: "builder",
+      content: "Builder",
+      panelID: "builder-panel",
+    },
+    {
+      id: "preview",
+      content: "Live Preview",
+      panelID: "preview-panel",
+    },
+  ];
 
   const configIdx = useMemo(() => blocks.findIndex((b) => b.type === "config"), [blocks]);
   const config = blocks[configIdx] || getDefaultStructure()[0];
@@ -116,15 +154,14 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
   };
 
   const addBlock = () => {
-    const next = [...blocks];
-    next.push(createDefaultBlock(newBlockType));
-    setBlocks(next);
+    const next = [...blocks, createDefaultBlock(newBlockType)];
+    setBlocksAndUpdateStepOrder(next);
   };
 
   const removeBlock = (index) => {
     if (index === configIdx) return; // config silinmez
     const next = blocks.filter((_, i) => i !== index);
-    setBlocks(next);
+    setBlocksAndUpdateStepOrder(next);
   };
 
   const updateBlock = (index, patch) => {
@@ -145,7 +182,7 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
     const next = [...blocks];
     const [moved] = next.splice(fromIdx, 1);
     next.splice(toIdx, 0, moved);
-    setBlocks(next);
+    setBlocksAndUpdateStepOrder(next);
   };
 
   const duplicateBlock = (index) => {
@@ -162,7 +199,7 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
     clone.id = newId;
     const next = [...blocks];
     next.splice(index + 1, 0, clone);
-    setBlocks(next);
+    setBlocksAndUpdateStepOrder(next);
   };
 
   const updatePickerOption = (blockIndex, optionIndex, patch) => {
@@ -239,666 +276,677 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
   };
 
   return (
-    <BlockStack gap="400">
-            <Banner tone="info">
-        3 types are supported: Picker, Input (text/number), Area. Multiplier only applies to base price.
-            </Banner>
+    <Page fullWidth>
+      <Tabs tabs={tabs} selected={selectedTab} onSelect={handleTabChange}>
+        <div style={{ paddingTop: '1.6rem' }}>
+          {selectedTab === 0 ? (
+            <BlockStack gap="400">
+              <Banner tone="info">
+                3 types are supported: Picker, Input (text/number), Area. Multiplier only applies to base price.
+              </Banner>
 
-      {/* Config */}
-            <Card title="General Settings" sectioned>
-              <BlockStack gap="300">
-                <TextField
-                  label="Title"
-            value={config.title || ""}
-            onChange={(v) => updateConfig({ title: v })}
-          />
-          <InlineStack>
-            <div style={{ marginRight: 12 }}>
-                <Checkbox
-                label="Customizer active"
-                checked={!!config.enabled}
-                onChange={(v) => updateConfig({ enabled: v })}
-              />
-            </div>
-            <div>
-                <Checkbox
-                  label="Show price"
-                checked={!!config.show_price}
-                onChange={(v) => updateConfig({ show_price: v })}
-              />
-            </div>
-          </InlineStack>
-          <InlineStack>
-            <div style={{ flex: 1, marginRight: 8 }}>
-              <TextField
-                label="Currency"
-                value={config.currency || "USD"}
-                onChange={(v) => updateConfig({ currency: v })}
-              />
-            </div>
-            <div style={{ flex: 1 }}>
-              <TextField
-                label="Base price (optional)"
-                type="number"
-                value={String(config.base_price ?? 0)}
-                onChange={(v) => updateConfig({ base_price: parseFloat(v) || 0 })}
-              />
-            </div>
-          </InlineStack>
-                <TextField
-            label="Step Order (comma separated ids)"
-            value={(config.step_order || []).join(", ")}
-            helpText="Example: colorPicker, headerPicker, widthHeight"
-            onChange={(v) => updateConfig({ step_order: v.split(",").map((s) => s.trim()).filter(Boolean) })}
-                />
-              </BlockStack>
-            </Card>
-
-      <div style={{ height: 8 }} />
-
-      {/* Add Block */}
-      <Card sectioned>
-        <InlineStack align="space-between">
-          <InlineStack gap="200">
-            <Select
-              label="Add block type"
-              labelHidden
-              options={[
-                { label: "Picker", value: "picker" },
-                { label: "Input", value: "input" },
-                { label: "Area", value: "area" },
-              ]}
-              value={newBlockType}
-              onChange={setNewBlockType}
-            />
-            <Button onClick={addBlock} variant="tertiary">Add Block</Button>
-          </InlineStack>
-        </InlineStack>
-      </Card>
-
-      {/* Blocks List */}
-      {blocks.map((block, idx) => (
-        block.type === "config" ? null : (
-          <Card key={block.id || idx} title={`${block.title || block.type} (${block.type})`} sectioned>
-            <BlockStack gap="300">
-              <InlineStack align="space-between">
-                <div style={{ flex: 1, marginRight: 8 }}>
+              {/* Config */}
+              <Card title="General Settings" sectioned>
+                <BlockStack gap="300">
                   <TextField
                     label="Title"
-                    value={block.title || ""}
-                    onChange={(v) => updateBlock(idx, { title: v, id: block.id || slugify(v) })}
+                    value={config.title || ""}
+                    onChange={(v) => updateConfig({ title: v })}
                   />
-                </div>
-                <div style={{ width: 220, marginRight: 8 }}>
-                  <TextField
-                    label="Id"
-                    value={block.id || ""}
-                    onChange={(v) => updateBlock(idx, { id: slugify(v) })}
-                    helpText="Should be short and unique"
-                  />
-                </div>
-                <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8 }}>
-                  <Button size="slim" variant="tertiary" onClick={() => moveBlock(idx, idx - 1)}>Up</Button>
-                  <Button size="slim" variant="tertiary" onClick={() => moveBlock(idx, idx + 1)}>Down</Button>
-                  <Button size="slim" variant="tertiary" onClick={() => duplicateBlock(idx)}>Duplicate</Button>
-                  <Button size="slim" variant="tertiary" onClick={() => toggleCollapse(block.id || String(idx))}>{collapsed.has(block.id || String(idx)) ? 'Expand' : 'Collapse'}</Button>
-                  <Checkbox
-                    label="Enabled"
-                    checked={!!block.enabled}
-                    onChange={(v) => updateBlock(idx, { enabled: v })}
-                  />
-                </div>
-                <div style={{ alignSelf: "flex-end" }}>
-                  <Button tone="critical" variant="tertiary" onClick={() => removeBlock(idx)}>Delete</Button>
-                </div>
-              </InlineStack>
-
-              {!collapsed.has(block.id || String(idx)) && (
-              <>
-              <Card title="Pricing" sectioned>
-                {block.type === 'picker' ? (
-                  <div style={{ fontSize: 12, color: '#666' }}>
-                    Pricing options are available for Picker. Use Mode (None/Added/Multiplier) and Value fields on each option card.
-                  </div>
-                ) : (
-                  <>
-                    <InlineStack>
-                      <div style={{ width: 220, marginRight: 8 }}>
-                        <Select
-                          label="Mode"
-                          options={[
-                            { label: "None", value: "none" },
-                            { label: "Added", value: "added" },
-                            { label: "Multiplier", value: "multiplier" },
-                          ]}
-                          value={block.pricing?.mode || "none"}
-                          onChange={(v) => updateBlock(idx, { pricing: { ...(block.pricing || {}), mode: v } })}
-                        />
-                      </div>
-                      <div style={{ width: 220 }}>
-                        <TextField
-                          label={block.type === "area" ? "Price per m²" : "Value"}
-                          type="number"
-                          step="any"
-                          value={String(block.pricing?.value ?? 0)}
-                          onChange={(v) => updateBlock(idx, { pricing: { ...(block.pricing || {}), value: parseFloat(v) || 0 } })}
-                        />
-                      </div>
-                    </InlineStack>
-                    <div style={{ fontSize: 12, color: '#666', marginTop: 6 }}>
-                      {block.type === 'area' ? 'Base price is calculated based on m². Multiplier only applies to base.' : 'Added is a fixed extra charge, Multiplier applies a multiplier to base (linear).'}
-                    </div>
-                  </>
-                )}
-              </Card>
-
-              {/* Type Specific */}
-              {block.type === "picker" && (
-                <BlockStack gap="300">
-                  <Checkbox
-                    label="Nested (1 level)"
-                    checked={!!block.isNested}
-                    onChange={(v) => updateBlock(idx, { isNested: v })}
-                  />
-
-                  {(block.options || []).map((opt, oIdx) => (
-                    <Card key={oIdx} sectioned>
-                  <InlineStack align="space-between">
-                        <div style={{ flex: 1, marginRight: 8 }}>
-                      <TextField
-                            label="Label"
-                            value={opt.label || ""}
-                            onChange={(v) => updatePickerOption(idx, oIdx, { label: v, value: opt.value || slugify(v) })}
+                  <InlineStack>
+                    <div style={{ marginRight: 12 }}>
+                      <Checkbox
+                        label="Customizer active"
+                        checked={!!config.enabled}
+                        onChange={(v) => updateConfig({ enabled: v })}
                       />
                     </div>
-                    <div style={{ flex: 1, marginRight: 8 }}>
-                          <TextField
-                            label="Value"
-                            value={opt.value || ""}
-                            onChange={(v) => updatePickerOption(idx, oIdx, { value: slugify(v) })}
-                          />
-                        </div>
-                        <div style={{ width: 200, marginRight: 8 }}>
-                          <Select
-                            label="Media Type"
-                            options={[
-                              { label: "HEX", value: "hex" },
-                              { label: "Image URL", value: "url" },
-                            ]}
-                            value={opt.media?.type || "hex"}
-                            onChange={(v) => updatePickerOption(idx, oIdx, { media: { ...(opt.media || {}), type: v } })}
-                          />
-                        </div>
-                        <div style={{ width: 180, marginRight: 8 }}>
-                      <Select
-                            label="Pricing Mode"
-                        options={[
-                              { label: "None", value: "none" },
-                              { label: "Added", value: "added" },
-                              { label: "Multiplier", value: "multiplier" },
-                        ]}
-                            value={opt.pricing?.mode || (typeof opt.added === 'number' ? 'added' : 'none')}
-                            onChange={(v) => updatePickerOption(idx, oIdx, { pricing: { ...(opt.pricing || {}), mode: v } })}
+                    <div>
+                      <Checkbox
+                        label="Show price"
+                        checked={!!config.show_price}
+                        onChange={(v) => updateConfig({ show_price: v })}
                       />
                     </div>
-                        <div style={{ width: 180 }}>
-                      <TextField
-                            label="Value"
-                        type="number"
-                            step="any"
-                            value={String(opt.pricing?.value ?? (typeof opt.added === 'number' ? opt.added : 0))}
-                            onChange={(v) => updatePickerOption(idx, oIdx, { pricing: { ...(opt.pricing || {}), value: parseFloat(v) || 0 } })}
-                      />
-                    </div>
-                        <div>
-                          <Button tone="critical" variant="tertiary" onClick={() => removePickerOption(idx, oIdx)}>Delete</Button>
-                        </div>
                   </InlineStack>
-
-                      {opt.media?.type === "url" ? (
-                      <TextField
-                        label="Image URL"
-                          value={opt.media?.url || ""}
-                          onChange={(v) => updatePickerOption(idx, oIdx, { media: { ...(opt.media || {}), url: v } })}
-                      />
-                    ) : (
-                      <TextField
-                          label="HEX"
-                          value={opt.media?.hex || "#000000"}
-                          onChange={(v) => updatePickerOption(idx, oIdx, { media: { ...(opt.media || {}), hex: v } })}
-                        />
-                      )}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <span style={{ fontSize: 12, color: '#666', paddingTop: 4 }}>Preview:</span>
-                        {opt.media?.type === 'url' && opt.media?.url ? (
-                          <img
-                            src={opt.media.url}
-                            alt={opt.label || opt.value || 'preview'}
-                            style={{ width: 30, height: 30, borderRadius: 4, objectFit: 'cover', border: '1px solid #ddd', marginTop: 10 }}
-                      />
-                    ) : (
-                      <div 
-                        style={{ 
-                              width: 30,
-                              height: 30,
-                              borderRadius: 4,
-                              border: '1px solid #ddd',
-                              marginTop: 10,
-                              backgroundColor: opt.media?.hex || '#000000',
-                        }}
-                      />
-                    )}
-                  </div>
-              </Card>
-            ))}
-                  <Button onClick={() => addPickerOption(idx)} variant="tertiary">Add Option</Button>
-
-                  {block.isNested && (
-                    <Card title="Nested Settings" sectioned>
-          <BlockStack gap="300">
-                        <Banner tone="info">Nested groups are displayed when a specific option of the parent picker is selected.</Banner>
-                        {(block.nested || []).map((ng, nIdx) => (
-                          <Card key={nIdx} sectioned>
-                            <BlockStack gap="200">
-                              <Select
-                                label="Show when parent equals"
-                                options={[{ label: "Select option", value: "" }, ...(block.options || []).map((o) => ({ label: o.label, value: o.value }))]}
-                                value={ng.when?.equals || ""}
-                                onChange={(v) => updateNestedGroup(idx, nIdx, { when: { parentId: block.id, equals: v } })}
-                              />
-                              <Banner tone="subdued">Items</Banner>
-                              {(ng.items || []).map((item, itemIdx) => (
-                                <Card key={itemIdx} title={`${item.title || item.type}`} sectioned>
-                  <InlineStack align="space-between">
-                    <div style={{ flex: 1, marginRight: 8,marginBottom: 8}}>
-                      <TextField
-                                        label="Title"
-                                        value={item.title || ""}
-                                        onChange={(v) => updateNestedItem(idx, nIdx, itemIdx, { title: v })}
-                                      />
-                                    </div>
-                                    <div style={{ width: 220, marginRight: 8 }}>
-                                      <TextField
-                                        label="Id"
-                                        value={item.id || ""}
-                                        onChange={(v) => updateNestedItem(idx, nIdx, itemIdx, { id: slugify(v) })}
-                                      />
-                                    </div>
-                                    <div style={{ alignSelf: "flex-end" }}>
-                                      <Checkbox
-                                        label="Enabled"
-                                        checked={!!item.enabled}
-                                        onChange={(v) => updateNestedItem(idx, nIdx, itemIdx, { enabled: v })}
-                      />
-                    </div>
-                                    <Button tone="critical" variant="tertiary" onClick={() => removeNestedItem(idx, nIdx, itemIdx)}>Delete</Button>
-                                  </InlineStack>
-
-                                  {/* Only picker items inside nested for now */}
-                                  {(item.options || []).map((opt, oIdx) => (
-                                    <Card key={oIdx} sectioned>
-                                      <InlineStack align="space-between" style={{ marginBottom: 8 }}>
+                  <InlineStack>
                     <div style={{ flex: 1, marginRight: 8 }}>
                       <TextField
-                                            label="Label"
-                                            value={opt.label || ""}
-                                            onChange={(v) => {
-                                              const options = [...(item.options || [])];
-                                              options[oIdx] = { ...options[oIdx], label: v, value: options[oIdx].value || slugify(v) };
-                                              updateNestedItem(idx, nIdx, itemIdx, { options });
-                                            }}
+                        label="Currency"
+                        value={config.currency || "USD"}
+                        onChange={(v) => updateConfig({ currency: v })}
                       />
                     </div>
-                    <div style={{ flex: 1, marginRight: 8 }}>
+                    <div style={{ flex: 1 }}>
                       <TextField
-                                            label="Value"
-                                            value={opt.value || ""}
-                                            onChange={(v) => {
-                                              const options = [...(item.options || [])];
-                                              options[oIdx] = { ...options[oIdx], value: slugify(v) };
-                                              updateNestedItem(idx, nIdx, itemIdx, { options });
-                                            }}
-                      />
-                    </div>
-                                        <div style={{ width: 200, marginRight: 8 }}>
-                                          <Select
-                                            label="Media Type"
-                                            options={[
-                                              { label: "HEX", value: "hex" },
-                                              { label: "Image URL", value: "url" },
-                                            ]}
-                                            value={opt.media?.type || "hex"}
-                                            onChange={(v) => {
-                                              const options = [...(item.options || [])];
-                                              options[oIdx] = { ...options[oIdx], media: { ...(opt.media || {}), type: v } };
-                                              updateNestedItem(idx, nIdx, itemIdx, { options });
-                                            }}
-                      />
-                     </div>
-                                        <div style={{ width: 180, marginRight: 8 }}>
-                      <Select
-                                            label="Pricing Mode"
-                        options={[
-                                              { label: "None", value: "none" },
-                                              { label: "Added", value: "added" },
-                                              { label: "Multiplier", value: "multiplier" },
-                                            ]}
-                                            value={opt.pricing?.mode || (typeof opt.added === 'number' ? 'added' : 'none')}
-                                            onChange={(v) => {
-                                              const options = [...(item.options || [])];
-                                              options[oIdx] = { ...options[oIdx], pricing: { ...(opt.pricing || {}), mode: v } };
-                                              updateNestedItem(idx, nIdx, itemIdx, { options });
-                                            }}
-                      />
-                     </div>
-                                        <div style={{ width: 180 }}>
-                      <TextField
-                                            label="Value"
+                        label="Base price (optional)"
                         type="number"
-                                            value={String(opt.pricing?.value ?? (typeof opt.added === 'number' ? opt.added : 0))}
-                                            onChange={(v) => {
-                                              const options = [...(item.options || [])];
-                                              options[oIdx] = { ...options[oIdx], pricing: { ...(opt.pricing || {}), value: parseFloat(v) || 0 } };
-                                              updateNestedItem(idx, nIdx, itemIdx, { options });
-                                            }}
+                        value={String(config.base_price ?? 0)}
+                        onChange={(v) => updateConfig({ base_price: parseFloat(v) || 0 })}
                       />
-                     </div>
-                   </InlineStack>
-
-                                      {opt.media?.type === "url" ? (
-                       <TextField
-                         label="Image URL"
-                                          value={opt.media?.url || ""}
-                                          onChange={(v) => {
-                                            const options = [...(item.options || [])];
-                                            options[oIdx] = { ...options[oIdx], media: { ...(opt.media || {}), url: v } };
-                                            updateNestedItem(idx, nIdx, itemIdx, { options });
-                                          }}
-                       />
-                     ) : (
-                       <TextField
-                                          label="HEX"
-                                          value={opt.media?.hex || "#000000"}
-                                          onChange={(v) => {
-                                            const options = [...(item.options || [])];
-                                            options[oIdx] = { ...options[oIdx], media: { ...(opt.media || {}), hex: v } };
-                                            updateNestedItem(idx, nIdx, itemIdx, { options });
-                                          }}
-                                        />
-                                      )}
-                                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                        <span style={{ fontSize: 12, color: '#666' }}>Preview:</span>
-                                        {opt.media?.type === 'url' && opt.media?.url ? (
-                                          <img
-                                            src={opt.media.url}
-                                            alt={opt.label || opt.value || 'preview'}
-                                            style={{ width: 30, height: 30, borderRadius: 4, objectFit: 'cover', border: '1px solid #ddd' }}
-                       />
-                     ) : (
-                       <div 
-                         style={{ 
-                                              width: 30,
-                                              height: 30,
-                                              borderRadius: 4,
-                                              border: '1px solid #ddd',
-                                              backgroundColor: opt.media?.hex || '#000000',
-                         }}
-                       />
-                     )}
                     </div>
-                                    </Card>
-                                  ))}
-                                  <Button variant="tertiary" onClick={() => {
-                                    const options = [...(item.options || [])];
-                                    options.push({ label: "Option", value: slugify(`option-${options.length + 1}`), media: { type: "hex", hex: "#000000" }, added: 0 });
-                                    updateNestedItem(idx, nIdx, itemIdx, { options });
-                                  }}>Add Option</Button>
-                                </Card>
-                              ))}
-                              <Button variant="tertiary" onClick={() => addNestedItemPicker(idx, nIdx)}>Add Nested Picker</Button>
-                  </BlockStack>
-                </Card>
-              ))}
-                        <Button variant="tertiary" onClick={() => addNestedGroup(idx)}>Add Nested Group</Button>
-                      </BlockStack>
-            </Card>
-                  )}
-          </BlockStack>
-        )}
-
-              {block.type === "input" && (
-          <BlockStack gap="300">
-                  <Select
-                    label="Subtype"
-                    options={[
-                      { label: "Text", value: "text" },
-                      { label: "Number", value: "number" },
-                    ]}
-                    value={block.subtype || "text"}
-                    onChange={(v) => updateBlock(idx, { subtype: v })}
-                  />
-
-                  {block.subtype === "text" && (
-                    <InlineStack>
-                      <div style={{ flex: 1, marginRight: 8 }}>
-                        <TextField
-                          label="Placeholder"
-                          value={block.placeholder || ""}
-                          onChange={(v) => updateBlock(idx, { placeholder: v })}
-                        />
-                      </div>
-                      <div style={{ width: 220 }}>
-                        <TextField
-                          label="Max Length"
-                          type="number"
-                          value={String(block.validation?.maxLength ?? 0)}
-                          onChange={(v) => updateBlock(idx, { validation: { ...(block.validation || {}), maxLength: parseInt(v || "0", 10) } })}
-                        />
-                      </div>
-                    </InlineStack>
-                  )}
-
-                  {block.subtype === "number" && (
-                    <InlineStack>
-                      <div style={{ width: 220, marginRight: 8 }}>
-            <TextField
-                          label="Min"
-                          type="number"
-                          value={String(block.validation?.min ?? 0)}
-                          onChange={(v) => updateBlock(idx, { validation: { ...(block.validation || {}), min: parseFloat(v) } })}
-                        />
-                      </div>
-                      <div style={{ width: 220, marginRight: 8 }}>
-            <TextField
-                          label="Max"
-              type="number"
-                          value={String(block.validation?.max ?? 0)}
-                          onChange={(v) => updateBlock(idx, { validation: { ...(block.validation || {}), max: parseFloat(v) } })}
-            />
-                      </div>
-                      <div style={{ width: 220 }}>
-            <TextField
-                          label="Step"
-              type="number"
-                          value={String(block.validation?.step ?? 1)}
-                          onChange={(v) => updateBlock(idx, { validation: { ...(block.validation || {}), step: parseFloat(v) } })}
-            />
-                      </div>
-                    </InlineStack>
-                  )}
+                  </InlineStack>
                 </BlockStack>
-              )}
-            
-              {block.type === "area" && (
-                <BlockStack gap="300">
-              <InlineStack>
-                    <div style={{ width: 160, marginRight: 8 }}>
-                      <TextField
-                        label="Unit"
-                        value={block.unit || "cm"}
-                        onChange={(v) => updateBlock(idx, { unit: v })}
-                      />
-                    </div>
-                    <div style={{ width: 220, marginRight: 8 }}>
-                <TextField
-                  label="Min Width"
-                  type="number"
-                        value={String(block.limits?.width?.min ?? 0)}
-                        onChange={(v) => updateBlock(idx, { limits: { ...(block.limits || {}), width: { ...(block.limits?.width || {}), min: parseFloat(v) } } })}
-                />
-                    </div>
-                    <div style={{ width: 220 }}>
-                <TextField
-                  label="Max Width" 
-                  type="number"
-                        value={String(block.limits?.width?.max ?? 0)}
-                        onChange={(v) => updateBlock(idx, { limits: { ...(block.limits || {}), width: { ...(block.limits?.width || {}), max: parseFloat(v) } } })}
-                />
-                    </div>
-              </InlineStack>
-              <InlineStack>
-                    <div style={{ width: 220, marginRight: 8 }}>
-                <TextField
-                  label="Min Height"
-                  type="number"
-                        value={String(block.limits?.height?.min ?? 0)}
-                        onChange={(v) => updateBlock(idx, { limits: { ...(block.limits || {}), height: { ...(block.limits?.height || {}), min: parseFloat(v) } } })}
-                />
-                    </div>
-                    <div style={{ width: 220 }}>
-                <TextField
-                  label="Max Height"
-                  type="number"
-                        value={String(block.limits?.height?.max ?? 0)}
-                        onChange={(v) => updateBlock(idx, { limits: { ...(block.limits || {}), height: { ...(block.limits?.height || {}), max: parseFloat(v) } } })}
-                />
-                    </div>
-              </InlineStack>
-                  <Banner tone="subdued">Price per m² is managed in the Pricing section (mode: multiplier, value: price/m²).</Banner>
-          </BlockStack>
-        )}
-              </>
-              )}
-            </BlockStack>
-          </Card>
-        )
-      ))}
+              </Card>
 
-      {/* Preview */}
-      <Card title="Preview - Live Price" sectioned>
-        <BlockStack gap="300">
-          {(blocks.filter(b=>b.type!=="config")).map((block) => (
-            <div key={`prev-${block.id}`}>
-              {block.type === 'picker' && block.enabled && (
+              <div style={{ height: 8 }} />
+
+              {/* Add Block */}
+              <Card sectioned>
                 <InlineStack align="space-between">
-                  <div style={{ flex: 1, marginRight: 8 }}>
+                  <InlineStack gap="200">
                     <Select
-                      label={block.title || block.id}
-                      options={[{ label: 'Select', value: '' }, ...(block.options||[]).map(o=>({ label: o.label, value: o.value }))]}
-                      value={preview[block.id] ?? ''}
-                      onChange={(v)=> setPreview((p)=> ({ ...p, [block.id]: v }))}
+                      label="Add block type"
+                      labelHidden
+                      options={[
+                        { label: "Picker", value: "picker" },
+                        { label: "Input", value: "input" },
+                        { label: "Area", value: "area" },
+                      ]}
+                      value={newBlockType}
+                      onChange={setNewBlockType}
                     />
-                  </div>
+                    <Button onClick={addBlock} variant="tertiary">Add Block</Button>
+                  </InlineStack>
                 </InlineStack>
-              )}
+              </Card>
 
-              {block.type === 'input' && block.enabled && (
-                <InlineStack align="space-between">
-                  { (block.subtype||'text') === 'text' ? (
-                    <div style={{ flex: 1, marginRight: 8 }}>
-                      <TextField
-                        label={block.title || block.id}
-                        value={String(preview[block.id] ?? '')}
-                        onChange={(v)=> setPreview((p)=> ({ ...p, [block.id]: v }))}
-                      />
-                    </div>
-                  ) : (
-                    <div style={{ width: 240 }}>
-                      <TextField
-                        label={block.title || block.id}
-                        type="number"
-                        step="any"
-                        value={String(preview[block.id] ?? 0)}
-                        onChange={(v)=> setPreview((p)=> ({ ...p, [block.id]: v }))}
-                      />
-                    </div>
-                  ) }
-                </InlineStack>
-              )}
-
-              {block.type === 'area' && block.enabled && (
-                <InlineStack>
-                  <div style={{ width: 220, marginRight: 8 }}>
-                    <TextField
-                      label={`${block.title || block.id} - Width (${block.unit||'cm'})`}
-                      type="number"
-                      step="any"
-                      value={String(preview[block.id]?.width ?? '')}
-                      onChange={(v)=> setPreview((p)=> ({ ...p, [block.id]: { ...(p[block.id]||{}), width: v } }))}
-                    />
-                  </div>
-                  <div style={{ width: 220 }}>
-                    <TextField
-                      label={`Height (${block.unit||'cm'})`}
-                      type="number"
-                      step="any"
-                      value={String(preview[block.id]?.height ?? '')}
-                      onChange={(v)=> setPreview((p)=> ({ ...p, [block.id]: { ...(p[block.id]||{}), height: v } }))}
-                    />
-                  </div>
-                </InlineStack>
-              )}
-
-              {/* Nested preview */}
-              {block.type==='picker' && block.enabled && block.isNested && Array.isArray(block.nested) && (
-                (block.nested||[]).map((ng, nIdx)=> (
-                  ng?.when?.equals && preview[block.id] === ng.when.equals ? (
-                    <div key={`prev-n-${block.id}-${nIdx}`} style={{ marginTop: 8 }}>
-                      {(ng.items||[]).map((item)=> (
-                        <div key={`prev-n-item-${item.id}`} style={{ marginTop: 6 }}>
-                          <Select
-                            label={item.title || item.id}
-                            options={[{ label: 'Select', value: '' }, ...(item.options||[]).map(o=>({ label: o.label, value: o.value }))]}
-                            value={preview[item.id] ?? ''}
-                            onChange={(v)=> setPreview((p)=> ({ ...p, [item.id]: v }))}
+              {/* Blocks List */}
+              {blocks.map((block, idx) => (
+                block.type === "config" ? null : (
+                  <Card key={block.id || idx} title={`${block.title || block.type} (${block.type})`} sectioned>
+                    <BlockStack gap="300">
+                      <InlineStack align="space-between">
+                        <div style={{ flex: 1, marginRight: 8 }}>
+                          <TextField
+                            label="Title"
+                            value={block.title || ""}
+                            onChange={(v) => updateBlock(idx, { title: v, id: block.id || slugify(v) })}
                           />
                         </div>
-                      ))}
+                        <div style={{ width: 220, marginRight: 8 }}>
+                          <TextField
+                            label="Id"
+                            value={block.id || ""}
+                            onChange={(v) => updateBlock(idx, { id: slugify(v) })}
+                            helpText="Should be short and unique"
+                          />
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8 }}>
+                          <Button size="slim" variant="tertiary" onClick={() => moveBlock(idx, idx - 1)}>Up</Button>
+                          <Button size="slim" variant="tertiary" onClick={() => moveBlock(idx, idx + 1)}>Down</Button>
+                          <Button size="slim" variant="tertiary" onClick={() => duplicateBlock(idx)}>Duplicate</Button>
+                          <Button size="slim" variant="tertiary" onClick={() => toggleCollapse(block.id || String(idx))}>{collapsed.has(block.id || String(idx)) ? 'Expand' : 'Collapse'}</Button>
+                          <Checkbox
+                            label="Enabled"
+                            checked={!!block.enabled}
+                            onChange={(v) => updateBlock(idx, { enabled: v })}
+                          />
+                        </div>
+                        <div style={{ alignSelf: "flex-end" }}>
+                          <Button tone="critical" variant="tertiary" onClick={() => removeBlock(idx)}>Delete</Button>
+                        </div>
+                      </InlineStack>
+
+                      {!collapsed.has(block.id || String(idx)) && (
+                      <>
+                      <Card title="Pricing" sectioned>
+                        {block.type === 'picker' ? (
+                          <div style={{ fontSize: 12, color: '#666' }}>
+                            Pricing options are available for Picker. Use Mode (None/Added/Multiplier) and Value fields on each option card.
+                          </div>
+                        ) : (
+                          <>
+                            <InlineStack>
+                              <div style={{ width: 220, marginRight: 8 }}>
+                                <Select
+                                  label="Mode"
+                                  options={[
+                                    { label: "None", value: "none" },
+                                    { label: "Added", value: "added" },
+                                    { label: "Multiplier", value: "multiplier" },
+                                  ]}
+                                  value={block.pricing?.mode || "none"}
+                                  onChange={(v) => updateBlock(idx, { pricing: { ...(block.pricing || {}), mode: v } })}
+                                />
+                              </div>
+                              <div style={{ width: 220 }}>
+                                <TextField
+                                  label={block.type === "area" ? "Per inch" : "Value"}
+                                  type="number"
+                                  step="any"
+                                  value={String(block.pricing?.value ?? 0)}
+                                  onChange={(v) => {
+                                    const newPricing = { ...(block.pricing || {}), value: parseFloat(v) || 0 };
+                                    updateBlock(idx, { pricing: newPricing });
+                                    // Live preview'daki width'i otomatik güncelle
+                                    if (block.type === 'area') {
+                                      setPreview((p) => ({ ...p, [block.id]: { ...(p[block.id] || {}), width: parseFloat(v) || 0 } }));
+                                    }
+                                  }}
+                                />
+                              </div>
+                            </InlineStack>
+                            <div style={{ fontSize: 12, color: '#666', marginTop: 6 }}>
+                              {block.type === 'area' ? 'Price is calculated based on width in inches. The value is a multiplier per inch.' : 'Added is a fixed extra charge, Multiplier applies a multiplier to base (linear).'}
+                            </div>
+                          </>
+                        )}
+                      </Card>
+
+                      {/* Type Specific */}
+                      {block.type === "picker" && (
+                        <BlockStack gap="300">
+                          <Checkbox
+                            label="Nested (1 level)"
+                            checked={!!block.isNested}
+                            onChange={(v) => updateBlock(idx, { isNested: v })}
+                          />
+
+                          {(block.options || []).map((opt, oIdx) => (
+                            <Card key={oIdx} sectioned>
+                          <InlineStack align="space-between" >
+                                <div style={{ flex: 1, marginRight: 8 , marginBottom: 8}}>
+                              <TextField
+                                    label="Label"
+                                    value={opt.label || ""}
+                                    onChange={(v) => updatePickerOption(idx, oIdx, { label: v, value: opt.value || slugify(v) })}
+                              />
+                            </div>
+                            <div style={{ flex: 1, marginRight: 8 , marginBottom: 10}}>
+                                  <TextField
+                                    label="Value"
+                                    value={opt.value || ""}
+                                    onChange={(v) => updatePickerOption(idx, oIdx, { value: slugify(v) })}
+                                  />
+                                </div>
+                                </InlineStack>
+                             
+                                <InlineStack align="space-between" >
+                                <div style={{ width: 200, marginRight: 8 , marginBottom: 10}}>
+                                  <Select
+                                    label="Media Type"
+                                    options={[
+                                      { label: "HEX", value: "hex" },
+                                      { label: "Image URL", value: "url" },
+                                    ]}
+                                    value={opt.media?.type || "hex"}
+                                    onChange={(v) => updatePickerOption(idx, oIdx, { media: { ...(opt.media || {}), type: v } })}
+                                  />
+                                </div>
+                                <div style={{ width: 180, marginRight: 8 , marginBottom: 10}}>
+                              <Select
+                                    label="Pricing Mode"
+                                options={[
+                                      { label: "None", value: "none" },
+                                      { label: "Added", value: "added" },
+                                      { label: "Multiplier", value: "multiplier" },
+                                ]}
+                                    value={opt.pricing?.mode || (typeof opt.added === 'number' ? 'added' : 'none')}
+                                    onChange={(v) => updatePickerOption(idx, oIdx, { pricing: { ...(opt.pricing || {}), mode: v } })}
+                              />
+                            </div>
+                                <div style={{ width: 180 , marginBottom: 10}}>
+                              <TextField
+                                    label="Value"
+                                type="number"
+                                    step="any"
+                                    value={String(opt.pricing?.value ?? (typeof opt.added === 'number' ? opt.added : 0))}
+                                    onChange={(v) => updatePickerOption(idx, oIdx, { pricing: { ...(opt.pricing || {}), value: parseFloat(v) || 0 } })}
+                              />
+                            </div>
+                            
+                                <div>
+                                  <Button tone="critical" variant="tertiary" onClick={() => removePickerOption(idx, oIdx)}>Delete</Button>
+                                </div>
+                          </InlineStack>
+
+                              {opt.media?.type === "url" ? (
+                              <TextField
+                                label="Image URL"
+                                  value={opt.media?.url || ""}
+                                  onChange={(v) => updatePickerOption(idx, oIdx, { media: { ...(opt.media || {}), url: v } })}
+                              />
+                            ) : (
+                              <TextField
+                                  label="HEX"
+                                  value={opt.media?.hex || "#000000"}
+                                  onChange={(v) => updatePickerOption(idx, oIdx, { media: { ...(opt.media || {}), hex: v } })}
+                                />
+                              )}
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <span style={{ fontSize: 12, color: '#666', paddingTop: 4 }}>Preview:</span>
+                                {opt.media?.type === 'url' && opt.media?.url ? (
+                                  <img
+                                    src={opt.media.url}
+                                    alt={opt.label || opt.value || 'preview'}
+                                    style={{ width: 30, height: 30, borderRadius: 4, objectFit: 'cover', border: '1px solid #ddd', marginTop: 10 }}
+                              />
+                            ) : (
+                              <div 
+                                style={{ 
+                                      width: 30,
+                                      height: 30,
+                                      borderRadius: 4,
+                                      border: '1px solid #ddd',
+                                      marginTop: 10,
+                                      backgroundColor: opt.media?.hex || '#000000',
+                                }}
+                              />
+                            )}
+                          </div>
+                      </Card>
+                    ))}
+                          <Button onClick={() => addPickerOption(idx)} variant="tertiary">Add Option</Button>
+
+                          {block.isNested && (
+                            <Box paddingBlockStart="400" borderBlockStart="divider" marginBlockStart="400">
+                              <BlockStack gap="400">
+                                <InlineStack align="space-between">
+                                  <Text variant="headingMd" as="h3">Nested Groups</Text>
+                                  <Button variant="tertiary" onClick={() => addNestedGroup(idx)}>Add Nested Group</Button>
+                                </InlineStack>
+                                <Banner tone="info" onDismiss={() => {}}>
+                                  Nested groups are displayed when a specific option of the parent picker is selected.
+                                </Banner>
+                                {(block.nested || []).map((ng, nIdx) => (
+                                  <Box key={nIdx} background="bg-surface-secondary" padding="300" borderRadius="200">
+                                    <BlockStack gap="300">
+                                      <InlineStack align="space-between">
+                                      <Select
+                                        label="Show when parent option is"
+                                        options={[{ label: "Select option", value: "" }, ...(block.options || []).map((o) => ({ label: o.label, value: o.value }))]}
+                                        value={ng.when?.equals || ""}
+                                        onChange={(v) => updateNestedGroup(idx, nIdx, { when: { parentId: block.id, equals: v } })}
+                                      />
+                                      <Button tone="critical" variant="tertiary">Remove Group</Button>
+                                      </InlineStack>
+                                      
+                                      <Text variant="headingSm" as="h4">Items in this group</Text>
+
+                                      {(ng.items || []).map((item, itemIdx) => (
+                                        <Card key={itemIdx}>
+                                          <BlockStack gap="300" padding="400">
+                                            <InlineStack align="space-between">
+                                              <Text variant="bodyMd" as="p" fontWeight="semibold">{item.title || item.type}</Text>
+                                              <Button tone="critical" size="slim" variant="tertiary" onClick={() => removeNestedItem(idx, nIdx, itemIdx)}>Delete Item</Button>
+                                            </InlineStack>
+                                          
+                                            <InlineStack>
+                                              <div style={{ flex: 1, marginRight: 8, marginBottom: 8 }}>
+                                                <TextField
+                                                  label="Title"
+                                                  value={item.title || ""}
+                                                  onChange={(v) => updateNestedItem(idx, nIdx, itemIdx, { title: v })}
+                                                />
+                                              </div>
+                                              <div style={{ width: 220, marginRight: 8 }}>
+                                                <TextField
+                                                  label="Id"
+                                                  value={item.id || ""}
+                                                  onChange={(v) => updateNestedItem(idx, nIdx, itemIdx, { id: slugify(v) })}
+                                                />
+                                              </div>
+                                              <div style={{ alignSelf: "flex-end" }}>
+                                                <Checkbox
+                                                  label="Enabled"
+                                                  checked={!!item.enabled}
+                                                  onChange={(v) => updateNestedItem(idx, nIdx, itemIdx, { enabled: v })}
+                                                />
+                                              </div>
+                                            </InlineStack>
+
+                                            {(item.options || []).map((opt, oIdx) => (
+                                              <Box key={oIdx} padding="300" border="divider" borderRadius="200">
+                                                <BlockStack gap="300">
+                                                  <InlineStack align="space-between" blockAlign="end" gap="300">
+                                                    <div style={{ flex: 1 }}>
+                                                      <TextField
+                                                        label="Label"
+                                                        value={opt.label || ""}
+                                                        onChange={(v) => {
+                                                          const options = [...(item.options || [])];
+                                                          options[oIdx] = { ...options[oIdx], label: v, value: options[oIdx].value || slugify(v) };
+                                                          updateNestedItem(idx, nIdx, itemIdx, { options });
+                                                        }}
+                                                      />
+                                                    </div>
+                                          
+                                                    <div style={{ flex: 1 }}>
+                                                      <TextField
+                                                        label="Value"
+                                                        value={opt.value || ""}
+                                                        onChange={(v) => {
+                                                          const options = [...(item.options || [])];
+                                                          options[oIdx] = { ...options[oIdx], value: slugify(v) };
+                                                          updateNestedItem(idx, nIdx, itemIdx, { options });
+                                                        }}
+                                                      />
+                                                    </div>
+                                                  </InlineStack>
+                                                  <InlineStack gap="200" align="space-between" blockAlign="end">
+                                                    <div style={{ width: 160 }}>
+                                                      <Select
+                                                        label="Media Type"
+                                                        options={[
+                                                          { label: "HEX", value: "hex" },
+                                                          { label: "Image URL", value: "url" },
+                                                        ]}
+                                                        value={opt.media?.type || "hex"}
+                                                        onChange={(v) => {
+                                                          const options = [...(item.options || [])];
+                                                          options[oIdx] = { ...options[oIdx], media: { ...(opt.media || {}), type: v } };
+                                                          updateNestedItem(idx, nIdx, itemIdx, { options });
+                                                        }}
+                                                      />
+                                                    </div>
+                                                    <div style={{ width: 160 }}>
+                                                      <Select
+                                                        label="Pricing Mode"
+                                                        options={[
+                                                          { label: "None", value: "none" },
+                                                          { label: "Added", value: "added" },
+                                                          { label: "Multiplier", value: "multiplier" },
+                                                        ]}
+                                                        value={opt.pricing?.mode || (typeof opt.added === 'number' ? 'added' : 'none')}
+                                                        onChange={(v) => {
+                                                          const options = [...(item.options || [])];
+                                                          options[oIdx] = { ...options[oIdx], pricing: { ...(opt.pricing || {}), mode: v } };
+                                                          updateNestedItem(idx, nIdx, itemIdx, { options });
+                                                        }}
+                                                      />
+                                                    </div>
+                                                    <div style={{ width: 160 }}>
+                                                      <TextField
+                                                        label="Pricing Value"
+                                                        type="number"
+                                                        value={String(opt.pricing?.value ?? (typeof opt.added === 'number' ? opt.added : 0))}
+                                                        onChange={(v) => {
+                                                          const options = [...(item.options || [])];
+                                                          options[oIdx] = { ...options[oIdx], pricing: { ...(opt.pricing || {}), value: parseFloat(v) || 0 } };
+                                                          updateNestedItem(idx, nIdx, itemIdx, { options });
+                                                        }}
+                                                      />
+                                                    </div>
+                                                  </InlineStack>
+
+                                                  {opt.media?.type === "url" ? (
+                                                    <TextField
+                                                      label="Image URL"
+                                                      value={opt.media?.url || ""}
+                                                      onChange={(v) => {
+                                                        const options = [...(item.options || [])];
+                                                        options[oIdx] = { ...options[oIdx], media: { ...(opt.media || {}), url: v } };
+                                                        updateNestedItem(idx, nIdx, itemIdx, { options });
+                                                      }}
+                                                    />
+                                                  ) : (
+                                                    <TextField
+                                                      label="HEX"
+                                                      value={opt.media?.hex || "#000000"}
+                                                      onChange={(v) => {
+                                                        const options = [...(item.options || [])];
+                                                        options[oIdx] = { ...options[oIdx], media: { ...(opt.media || {}), hex: v } };
+                                                        updateNestedItem(idx, nIdx, itemIdx, { options });
+                                                      }}
+                                                    />
+                                                  )}
+                                                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                                    <span style={{ fontSize: 12, color: '#666' }}>Preview:</span>
+                                                    {opt.media?.type === 'url' && opt.media?.url ? (
+                                                      <img
+                                                        src={opt.media.url}
+                                                        alt={opt.label || opt.value || 'preview'}
+                                                        style={{ width: 30, height: 30, borderRadius: 4, objectFit: 'cover', border: '1px solid #ddd' }}
+                                                      />
+                                                    ) : (
+                                                      <div 
+                                                        style={{ 
+                                                          width: 30,
+                                                          height: 30,
+                                                          borderRadius: 4,
+                                                          border: '1px solid #ddd',
+                                                          backgroundColor: opt.media?.hex || '#000000',
+                                                        }}
+                                                      />
+                                                    )}
+                                                  </div>
+                                                </BlockStack>
+                                              </Box>
+                                            ))}
+                                            <Button variant="tertiary" size="slim" onClick={() => {
+                                              const options = [...(item.options || [])];
+                                              options.push({ label: "Option", value: slugify(`option-${options.length + 1}`), media: { type: "hex", hex: "#000000" }, added: 0 });
+                                              updateNestedItem(idx, nIdx, itemIdx, { options });
+                                            }}>Add Option to Item</Button>
+                                          </BlockStack>
+                                        </Card>
+                                      ))}
+                                      <Button variant="tertiary" onClick={() => addNestedItemPicker(idx, nIdx)}>Add New Item to Group</Button>
+                                    </BlockStack>
+                                  </Box>
+                                ))}
+                              </BlockStack>
+                            </Box>
+                          )}
+                        </BlockStack>
+                      )}
+
+                      {block.type === "input" && (
+                  <BlockStack gap="300">
+                          <Select
+                            label="Subtype"
+                            options={[
+                              { label: "Text", value: "text" },
+                              { label: "Number", value: "number" },
+                            ]}
+                            value={block.subtype || "text"}
+                            onChange={(v) => updateBlock(idx, { subtype: v })}
+                          />
+
+                          {block.subtype === "text" && (
+                            <InlineStack>
+                              <div style={{ flex: 1, marginRight: 8 }}>
+                                <TextField
+                                  label="Placeholder"
+                                  value={block.placeholder || ""}
+                                  onChange={(v) => updateBlock(idx, { placeholder: v })}
+                                />
+                              </div>
+                              <div style={{ width: 220 }}>
+                                <TextField
+                                  label="Max Length"
+                                  type="number"
+                                  value={String(block.validation?.maxLength ?? 0)}
+                                  onChange={(v) => updateBlock(idx, { validation: { ...(block.validation || {}), maxLength: parseInt(v || "0", 10) } })}
+                                />
+                              </div>
+                            </InlineStack>
+                          )}
+
+                          {block.subtype === "number" && (
+                            <InlineStack>
+                              <div style={{ width: 220, marginRight: 8 }}>
+                    <TextField
+                                  label="Min"
+                                  type="number"
+                                  value={String(block.validation?.min ?? 0)}
+                                  onChange={(v) => updateBlock(idx, { validation: { ...(block.validation || {}), min: parseFloat(v) } })}
+                                />
+                              </div>
+                              <div style={{ width: 220, marginRight: 8 }}>
+                    <TextField
+                                  label="Max"
+                      type="number"
+                                  value={String(block.validation?.max ?? 0)}
+                                  onChange={(v) => updateBlock(idx, { validation: { ...(block.validation || {}), max: parseFloat(v) } })}
+                    />
+                              </div>
+                              <div style={{ width: 220 }}>
+                    <TextField
+                                  label="Step"
+                      type="number"
+                                  value={String(block.validation?.step ?? 1)}
+                                  onChange={(v) => updateBlock(idx, { validation: { ...(block.validation || {}), step: parseFloat(v) } })}
+                    />
+                              </div>
+                            </InlineStack>
+                          )}
+                        </BlockStack>
+                      )}
+                    
+                      {block.type === "area" && (
+                        <BlockStack gap="300">
+                      <InlineStack>
+                            <div style={{ width: 220, marginRight: 8 }}>
+                        <TextField
+                          label="Min Width (inch)"
+                          type="number"
+                                value={String(block.limits?.width?.min ?? 0)}
+                                onChange={(v) => updateBlock(idx, { limits: { ...(block.limits || {}), width: { ...(block.limits?.width || {}), min: parseFloat(v) } } })}
+                        />
+                            </div>
+                            <div style={{ width: 220 }}>
+                        <TextField
+                          label="Max Width (inch)"
+                          type="number"
+                                value={String(block.limits?.width?.max ?? 0)}
+                                onChange={(v) => updateBlock(idx, { limits: { ...(block.limits || {}), width: { ...(block.limits?.width || {}), max: parseFloat(v) } } })}
+                        />
+                            </div>
+                      </InlineStack>
+                          <Banner tone="subdued">
+                            <p>The "Per inch" value in the Pricing section sets the reference width. The price for this width is the "New Base Price" (Base Price + all option costs). The final price is then calculated based on the customer's actual width input.</p>
+                          </Banner>
+                    </BlockStack>
+                )}
+                      </>
+                      )}
+                    </BlockStack>
+                  </Card>
+                )
+              ))}
+            </BlockStack>
+          ) : (
+            <div style={{ paddingTop: '1.6rem' }}>
+              {/* Preview */}
+              <Card title="Preview - Live Price" sectioned>
+                <BlockStack gap="300">
+                  {(blocks.filter(b=>b.type!=="config")).map((block) => (
+                    <div key={`prev-${block.id}`}>
+                      {block.type === 'picker' && block.enabled && (
+                        <InlineStack align="space-between">
+                          <div style={{ flex: 1, marginRight: 8 }}>
+                            <Select
+                              label={block.title || block.id}
+                              options={[{ label: 'Select', value: '' }, ...(block.options||[]).map(o=>({ label: o.label, value: o.value }))]}
+                              value={preview[block.id] ?? ''}
+                              onChange={(v)=> setPreview((p)=> ({ ...p, [block.id]: v }))}
+                            />
+                          </div>
+                        </InlineStack>
+                      )}
+
+                      {block.type === 'input' && block.enabled && (
+                        <InlineStack align="space-between">
+                          { (block.subtype||'text') === 'text' ? (
+                            <div style={{ flex: 1, marginRight: 8 }}>
+                              <TextField
+                                label={block.title || block.id}
+                                value={String(preview[block.id] ?? '')}
+                                onChange={(v)=> setPreview((p)=> ({ ...p, [block.id]: v }))}
+                              />
+                            </div>
+                          ) : (
+                            <div style={{ width: 240 }}>
+                              <TextField
+                                label={block.title || block.id}
+                                type="number"
+                                step="any"
+                                value={String(preview[block.id] ?? 0)}
+                                onChange={(v)=> setPreview((p)=> ({ ...p, [block.id]: v }))}
+                              />
+                            </div>
+                          ) }
+                        </InlineStack>
+                      )}
+
+                      {block.type === 'area' && block.enabled && (
+                        <InlineStack>
+                          <div style={{ width: 220, marginRight: 8 }}>
+                            <TextField
+                              label={`${block.title || block.id} - Width (inch)`}
+                              type="number"
+                              step="any"
+                              value={String(preview[block.id]?.width ?? '')}
+                              onChange={(v)=> setPreview((p)=> ({ ...p, [block.id]: { ...(p[block.id]||{}), width: v } }))}
+                            />
+                          </div>
+                        </InlineStack>
+                      )}
+
+                      {/* Nested preview */}
+                      {block.type==='picker' && block.enabled && block.isNested && Array.isArray(block.nested) && (
+                        (block.nested||[]).map((ng, nIdx)=> (
+                          ng?.when?.equals && preview[block.id] === ng.when.equals ? (
+                            <div key={`prev-n-${block.id}-${nIdx}`} style={{ marginTop: 8 }}>
+                              {(ng.items||[]).map((item)=> (
+                                <div key={`prev-n-item-${item.id}`} style={{ marginTop: 6 }}>
+                                  <Select
+                                    label={item.title || item.id}
+                                    options={[{ label: 'Select', value: '' }, ...(item.options||[]).map(o=>({ label: o.label, value: o.value }))]}
+                                    value={preview[item.id] ?? ''}
+                                    onChange={(v)=> setPreview((p)=> ({ ...p, [item.id]: v }))}
+                                  />
+                                </div>
+                              ))}
+                            </div>
+                          ) : null
+                        ))
+                      )}
                     </div>
-                  ) : null
-                ))
-              )}
-            </div>
-          ))}
+                  ))}
 
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ color: '#666' }}>
-              Currency: {config.currency || 'USD'}
-            </div>
-            <div style={{ fontSize: 20, fontWeight: 600 }}>
-              Total: {(() => {
-                try {
-                  const t = computeTotalPrice({ config: blocks, selections: preview });
-                  return `${(t || 0).toFixed(2)} ${config.currency || ''}`.trim();
-                } catch {
-                  return `0.00 ${config.currency || ''}`.trim();
-                }
-              })()}
-            </div>
-          </div>
-        </BlockStack>
-      </Card>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ color: '#666' }}>
+                      Currency: {config.currency || 'USD'}
+                    </div>
+                    <div style={{ fontSize: 20, fontWeight: 600 }}>
+                      Total: {(() => {
+                        try {
+                          // Ensure height is not passed to the pricing function
+                          const selectionsForPricing = JSON.parse(JSON.stringify(preview));
+                          for (const block of blocks) {
+                            if (block.type === 'area' && selectionsForPricing[block.id]) {
+                              delete selectionsForPricing[block.id].height;
+                            }
+                          }
 
-      <div style={{ position: 'sticky', bottom: 0, background: 'white', padding: 12, borderTop: '1px solid #E1E3E5', zIndex: 10 }}>
-      <InlineStack align="end">
-        <Button onClick={onCancel} variant="tertiary">
-          Cancel
-        </Button>
-        <Button variant="primary" onClick={handleSave}>
-          Save
-        </Button>
-      </InlineStack>
+                          const t = computeTotalPrice({ config: blocks, selections: selectionsForPricing });
+                          return `${(t || 0).toFixed(2)} ${config.currency || ''}`.trim();
+                        } catch (e) {
+                          console.error("Price calculation error:", e);
+                          return `0.00 ${config.currency || ''}`.trim();
+                        }
+                      })()}
+                    </div>
+                  </div>
+                </BlockStack>
+              </Card>
+            </div>
+          )}
+        </div>
+      </Tabs>
+      <div style={{ position: 'sticky', bottom: 0, background: 'white', padding: '1.2rem', borderTop: '1px solid #e1e3e5', zIndex: 10, marginTop: '1.6rem' }}>
+        <InlineStack align="end" gap="200">
+          <Button onClick={onCancel} variant="tertiary">
+            Cancel
+          </Button>
+          <Button variant="primary" onClick={handleSave}>
+            Save
+          </Button>
+        </InlineStack>
       </div>
-    </BlockStack>
+    </Page>
   );
 } 

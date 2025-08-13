@@ -124,12 +124,12 @@ npm run deploy
 - Resim URL'si girişi
 - Önizleme özelliği
 
-## 🔧 **Konfigürasyon**
+## 🔧 **Configuration**
 
-### **Shopify App Ayarları**
+### **Shopify App Settings**
 ```toml
 # shopify.app.toml
-name = "Metafield JSON Editor"
+name = "Product Customizer"
 client_id = "your_client_id"
 application_url = "https://your-app-url.com"
 embedded = true
@@ -139,30 +139,30 @@ scopes = "write_products,read_products,write_product_listings,read_product_listi
 ```
 
 ### **Metafield Namespace**
-App, `customizer` namespace'ini kullanır:
+App uses `customizer` namespace:
 - **Namespace**: `customizer`
 - **Key**: `options`
 - **Type**: `json`
 
-## 📊 **Metafield JSON Yapısı**
+## 📊 **Metafield JSON Structure**
 
 ```json
 [
   {
     "type": "color",
-    "label": "Ürün Rengi",
+    "label": "Product Color",
     "key": "product_color",
     "required": true,
     "options": [
-      { "label": "Kırmızı", "value": "red" },
-      { "label": "Mavi", "value": "blue" },
-      { "label": "Yeşil", "value": "green" }
+      { "label": "Red", "value": "red" },
+      { "label": "Blue", "value": "blue" },
+      { "label": "Green", "value": "green" }
     ],
     "defaultValue": "red"
   },
   {
     "type": "size",
-    "label": "Ürün Boyutu",
+    "label": "Product Size",
     "key": "product_size",
     "required": false,
     "options": [
@@ -177,58 +177,54 @@ App, `customizer` namespace'ini kullanır:
 
 ## 🚀 **Deployment**
 
-### **Production Deployment**
+### **Production**
 ```bash
-# App'i production'a deploy edin
+# Deploy app to production
 npm run deploy
 
-# Environment variables'ları güncelleyin
+# Update environment variables
 npm run env:push
 ```
 
 ### **Development**
 ```bash
-# Geliştirme sunucusunu başlatın
+# Start development server
 npm run dev
 
-# Test store'da app'i açın
+# Open app in test store
 npm run open
 ```
 
 ## 🔍 **Troubleshooting**
 
-### **Yaygın Sorunlar**
+### **Common Issues**
 
-1. **Metafield kaydedilemiyor**
-   - Shopify API izinlerini kontrol edin
-   - Metafield namespace'inin doğru olduğundan emin olun
+1. **Metafield not saving**
+   - Check Shopify API permissions
+   - Ensure the metafield namespace is correct
 
-2. **App yüklenmiyor**
-   - Shopify CLI'nin güncel olduğundan emin olun
-   - Partner hesabınızda app'in kayıtlı olduğunu kontrol edin
+2. **App not loading**
+   - Ensure Shopify CLI is up to date
+   - Check if the app is registered in your partner account
 
 3. **GraphQL hataları**
-   - API versiyonunun güncel olduğunu kontrol edin
-   - Access scopes'ların doğru ayarlandığından emin olun
+   - Check if the API version is up to date
+   - Ensure access scopes are correctly set
 
-## 🤝 **Katkıda Bulunma**
+## 🤝 **Contributing**
 
-1. Fork yapın
-2. Feature branch oluşturun (`git checkout -b feature/amazing-feature`)
-3. Commit yapın (`git commit -m 'Add amazing feature'`)
-4. Push yapın (`git push origin feature/amazing-feature`)
-5. Pull Request oluşturun
+1. Fork
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit (`git commit -m 'Add amazing feature'`)
+4. Push (`git push origin feature/amazing-feature`)
+5. Create a pull request
 
-## 📄 **Lisans**
+## 📞 **Contact**
 
-Bu proje MIT lisansı altında lisanslanmıştır.
-
-## 📞 **İletişim**
-
-- **Geliştirici**: Beyza Karapıçak
+- **Developer**: Beyza Karapıçak
 - **Email**: contact.karapicak@gmail.com
 - **GitHub**: [github.com/beyzakrp](https://github.com/beyzakrp)
 
 ---
 
-**Not**: Bu app Shopify Partner Programı kapsamında geliştirilmiştir ve Shopify'ın resmi API'lerini kullanmaktadır.
+**Note**: This app is developed within the Shopify Partner Program and uses Shopify's official APIs.
