@@ -10,7 +10,6 @@ const NO_CHANGES = {
   operations: [],
 };
 
-// --- YENİ VE DÜZELTİLMİŞ FİYAT HESAPLAMA MANTIĞI ---
 
 function toNumber(val, fallback = 0) {
   const n = typeof val === "string" ? parseFloat(val) : val;
@@ -23,7 +22,6 @@ function computeTotalPrice({ config, selections }) {
   const cfg = config.find((b) => b.type === "config") || {};
   const basePrice = toNumber(cfg.base_price, 0);
 
-  // --- STAGE 1: Calculate "New Base Price" ---
   let addedSum = 0;
   let multiplierValueSum = 0;
 
@@ -74,7 +72,6 @@ function computeTotalPrice({ config, selections }) {
   const multiplierEffect = basePrice * multiplierValueSum;
   const newBasePrice = basePrice + addedSum + multiplierEffect;
 
-  // --- STAGE 2: Calculate Final Price based on Width ---
   const areaBlock = config.find((b) => b.type === "area" && b.enabled);
   if (!areaBlock) {
     return newBasePrice;
@@ -96,29 +93,42 @@ function computeTotalPrice({ config, selections }) {
 }
 
 
-// --- ANA FONKSİYON ---
 
 export function cartTransformRun(input) {
+  console.log("=== CART TRANSFORM DEBUG START ===");
+  console.log("Input cart lines:", input.cart.lines.length);
+  
   const operations = input.cart.lines
-    .map(line => {
+    .map((line, index) => {
+      console.log(`Processing line ${index}:`, line.id);
+      console.log("Line attributes:", line.attributes.map(attr => ({ key: attr.key, value: attr.value.substring(0, 100) + "..." })));
+      
       const configAttribute = line.attributes.find(attr => attr.key === "customizer_config");
       const selectionsAttribute = line.attributes.find(attr => attr.key === "customizer_selections");
 
       if (!configAttribute || !selectionsAttribute) {
+        console.log("Missing attributes - config:", !!configAttribute, "selections:", !!selectionsAttribute);
         return null;
       }
 
       try {
         const config = JSON.parse(configAttribute.value);
         const selections = JSON.parse(selectionsAttribute.value);
+        console.log("Parsed config:", config);
+        console.log("Parsed selections:", selections);
+        
         const newPrice = computeTotalPrice({ config, selections });
         const currentPrice = parseFloat(line.cost.amountPerQuantity.amount);
+        
+        console.log("Calculated price:", newPrice);
+        console.log("Current price:", currentPrice);
+        console.log("Price difference:", Math.abs(newPrice - currentPrice));
 
         // Update price only if it's calculated correctly and different from the current price
         if (newPrice > 0 && Math.abs(newPrice - currentPrice) > 0.01) {
-          /** @type {UpdateOperation} */
+          console.log("Creating price update operation");
           const updateOperation = {
-            update: {
+            lineUpdate: {
               cartLineId: line.id,
               price: {
                 adjustment: {
@@ -130,15 +140,19 @@ export function cartTransformRun(input) {
             }
           };
           return updateOperation;
+        } else {
+          console.log("No price update needed - price difference too small or invalid price");
         }
       } catch (e) {
-        console.error("Cart Transform Error:", e.message);
-        // Don't crash, just log the error and make no changes
+        console.error("Cart Transform Error:", e.message, e.stack);
       }
       
       return null;
     })
     .filter(op => op !== null);
+
+  console.log("Total operations:", operations.length);
+  console.log("=== CART TRANSFORM DEBUG END ===");
 
   if (operations.length === 0) {
     return NO_CHANGES;
