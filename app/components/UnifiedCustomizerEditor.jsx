@@ -275,6 +275,42 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
     onSave(blocks);
   };
 
+  const handleAddToCart = async () => {
+    const configForCart = blocks;
+    const selectionsForCart = preview;
+    const variantId = "gid://shopify/ProductVariant/45499257618721"; 
+
+    const attributes = {
+      _config: JSON.stringify(configForCart),
+      _selections: JSON.stringify(selectionsForCart),
+    };
+
+    const formData = {
+      'id': variantId,
+      'quantity': 1,
+      'attributes': attributes
+    };
+
+    try {
+      const response = await fetch('/cart/add.js', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(formData)
+      });
+      const data = await response.json();
+      if (response.ok) {
+        alert('Product added to cart!');
+      } else {
+        alert(`Error adding product: ${data.description || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Failed to add to cart:', error);
+      alert('Failed to add product to cart. See console for details.');
+    }
+  };
+
   return (
     <Page fullWidth>
       <Tabs tabs={tabs} selected={selectedTab} onSelect={handleTabChange}>
@@ -930,6 +966,9 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
                         }
                       })()}
                     </div>
+                  </div>
+                  <div style={{ marginTop: '1rem' }}>
+                    <Button onClick={handleAddToCart} variant="primary">Add to Cart (Test)</Button>
                   </div>
                 </BlockStack>
               </Card>
