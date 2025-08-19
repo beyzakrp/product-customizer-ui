@@ -20,7 +20,7 @@ function computeTotalPrice({ config, selections }) {
   if (!Array.isArray(config)) return 0;
 
   const cfg = config.find((b) => b.type === "config") || {};
-  const basePrice = toNumber(cfg.base_price, 0);
+  const unitPrice = toNumber(cfg.unit_price, 0);
 
   let addedSum = 0;
   let multiplierValueSum = 0;
@@ -69,26 +69,24 @@ function computeTotalPrice({ config, selections }) {
     }
   }
 
-  const multiplierEffect = basePrice * multiplierValueSum;
-  const newBasePrice = basePrice + addedSum + multiplierEffect;
+  const multiplierEffect = unitPrice * multiplierValueSum;
+  const newUnitPrice = unitPrice + addedSum + multiplierEffect;
 
   const areaBlock = config.find((b) => b.type === "area" && b.enabled);
   if (!areaBlock) {
-    return newBasePrice;
+    return newUnitPrice;
   }
-
-  const referenceWidth = toNumber(areaBlock.pricing?.value, 1);
-  if (referenceWidth <= 0) {
-    return newBasePrice;
-  }
-
-  const priceAtReferenceWidth = newBasePrice;
-  const pricePerInch = priceAtReferenceWidth / referenceWidth;
 
   const areaSelection = selections?.[areaBlock.id];
   const customerWidth = toNumber(areaSelection?.width, 0);
 
-  const finalPrice = customerWidth * pricePerInch;
+  // Width 0 ise, fiyat hesaplanamaz
+  if (customerWidth <= 0) {
+    return 0;
+  }
+
+  // Unit price ile width çarpılır
+  const finalPrice = customerWidth * newUnitPrice;
   return finalPrice;
 }
 

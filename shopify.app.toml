@@ -3,7 +3,7 @@
 client_id = "f1c42fe6630285441b2264d62361d0a8"
 name = "product-customizer-ui"
 handle = "product-customizer-ui"
-application_url = "https://vote-italian-before-copied.trycloudflare.com"
+application_url = "https://rwanda-karaoke-porcelain-wv.trycloudflare.com"
 embedded = true
 
 [build]
@@ -26,7 +26,7 @@ api_version = "2025-07"
 scopes = "write_products,read_products,write_product_listings,read_product_listings"
 
 [auth]
-redirect_urls = ["https://vote-italian-before-copied.trycloudflare.com/auth/callback", "https://vote-italian-before-copied.trycloudflare.com/auth/shopify/callback", "https://vote-italian-before-copied.trycloudflare.com/api/auth/callback"]
+redirect_urls = ["https://rwanda-karaoke-porcelain-wv.trycloudflare.com/auth/callback", "https://rwanda-karaoke-porcelain-wv.trycloudflare.com/auth/shopify/callback", "https://rwanda-karaoke-porcelain-wv.trycloudflare.com/api/auth/callback"]
 
 [pos]
 embedded = false

@@ -35,7 +35,7 @@ function getDefaultStructure() {
       enabled: true,
       show_price: true,
       currency: "USD",
-      base_price: 0,
+      unit_price: 0,
       step_order: [],
     },
   ];
@@ -84,11 +84,11 @@ function createDefaultBlock(type) {
       type: "area",
       title: "Area",
       enabled: true,
-      unit: "inch",
+      unit: "cm",
       limits: {
         width: { min: 20, max: 120 },
       },
-      pricing: { mode: "multiplier", value: 10.0 },
+      pricing: { mode: "none", value: 0 },
     };
   }
   return {
@@ -105,6 +105,65 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
   const [collapsed, setCollapsed] = useState(() => new Set());
   const [preview, setPreview] = useState({});
   const [selectedTab, setSelectedTab] = useState(0);
+
+  // Validation helpers
+  const getFirstPickerBlock = useMemo(() => {
+    return blocks.find(b => b.type === 'picker' && b.enabled);
+  }, [blocks]);
+
+  const getAreaBlock = useMemo(() => {
+    return blocks.find(b => b.type === 'area' && b.enabled);
+  }, [blocks]);
+
+  const hasValidSelections = useMemo(() => {
+    // Check if first picker has selection
+    if (getFirstPickerBlock && !preview[getFirstPickerBlock.id]) {
+      return false;
+    }
+    
+    // Check if area block has width
+    if (getAreaBlock) {
+      const areaSelection = preview[getAreaBlock.id];
+      if (!areaSelection || !areaSelection.width || parseFloat(areaSelection.width) <= 0) {
+        return false;
+      }
+      
+      // Check width limits
+      const width = parseFloat(areaSelection.width);
+      if (getAreaBlock.limits?.width?.min && width < getAreaBlock.limits.width.min) {
+        return false;
+      }
+      if (getAreaBlock.limits?.width?.max && width > getAreaBlock.limits.width.max) {
+        return false;
+      }
+    }
+    
+    return true;
+  }, [preview, getFirstPickerBlock, getAreaBlock]);
+
+  const getValidationMessage = useMemo(() => {
+    if (getFirstPickerBlock && !preview[getFirstPickerBlock.id]) {
+      return `Lütfen önce "${getFirstPickerBlock.title || getFirstPickerBlock.id}" seçimini yapınız.`;
+    }
+    
+    if (getAreaBlock) {
+      const areaSelection = preview[getAreaBlock.id];
+      if (!areaSelection || !areaSelection.width || parseFloat(areaSelection.width) <= 0) {
+        return `Lütfen "${getAreaBlock.title || getAreaBlock.id}" için genişlik değeri giriniz.`;
+      }
+      
+      // Check width limits
+      const width = parseFloat(areaSelection.width);
+      if (getAreaBlock.limits?.width?.min && width < getAreaBlock.limits.width.min) {
+        return `"${getAreaBlock.title || getAreaBlock.id}" için minimum genişlik ${getAreaBlock.limits.width.min} cm olmalıdır.`;
+      }
+      if (getAreaBlock.limits?.width?.max && width > getAreaBlock.limits.width.max) {
+        return `"${getAreaBlock.title || getAreaBlock.id}" için maksimum genişlik ${getAreaBlock.limits.width.max} cm olmalıdır.`;
+      }
+    }
+    
+    return null;
+  }, [preview, getFirstPickerBlock, getAreaBlock]);
 
   const setBlocksAndUpdateStepOrder = useCallback((newBlocks) => {
     const newStepOrder = newBlocks
@@ -355,10 +414,11 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
                     </div>
                     <div style={{ flex: 1 }}>
                       <TextField
-                        label="Base price (optional)"
+                        label="Unit price (per cm)"
                         type="number"
-                        value={String(config.base_price ?? 0)}
-                        onChange={(v) => updateConfig({ base_price: parseFloat(v) || 0 })}
+                        step="0.01"
+                        value={String(config.unit_price ?? 0)}
+                        onChange={(v) => updateConfig({ unit_price: parseFloat(v) || 0 })}
                       />
                     </div>
                   </InlineStack>
@@ -426,49 +486,47 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
 
                       {!collapsed.has(block.id || String(idx)) && (
                       <>
-                      <Card title="Pricing" sectioned>
-                        {block.type === 'picker' ? (
-                          <div style={{ fontSize: 12, color: '#666' }}>
-                            Pricing options are available for Picker. Use Mode (None/Added/Multiplier) and Value fields on each option card.
-                          </div>
-                        ) : (
-                          <>
-                            <InlineStack>
-                              <div style={{ width: 220, marginRight: 8 }}>
-                                <Select
-                                  label="Mode"
-                                  options={[
-                                    { label: "None", value: "none" },
-                                    { label: "Added", value: "added" },
-                                    { label: "Multiplier", value: "multiplier" },
-                                  ]}
-                                  value={block.pricing?.mode || "none"}
-                                  onChange={(v) => updateBlock(idx, { pricing: { ...(block.pricing || {}), mode: v } })}
-                                />
-                              </div>
-                              <div style={{ width: 220 }}>
-                                <TextField
-                                  label={block.type === "area" ? "Per inch" : "Value"}
-                                  type="number"
-                                  step="any"
-                                  value={String(block.pricing?.value ?? 0)}
-                                  onChange={(v) => {
-                                    const newPricing = { ...(block.pricing || {}), value: parseFloat(v) || 0 };
-                                    updateBlock(idx, { pricing: newPricing });
-                                    // Live preview'daki width'i otomatik güncelle
-                                    if (block.type === 'area') {
-                                      setPreview((p) => ({ ...p, [block.id]: { ...(p[block.id] || {}), width: parseFloat(v) || 0 } }));
-                                    }
-                                  }}
-                                />
-                              </div>
-                            </InlineStack>
-                            <div style={{ fontSize: 12, color: '#666', marginTop: 6 }}>
-                              {block.type === 'area' ? 'Price is calculated based on width in inches. The value is a multiplier per inch.' : 'Added is a fixed extra charge, Multiplier applies a multiplier to base (linear).'}
+                      {block.type !== 'area' && (
+                        <Card title="Pricing" sectioned>
+                          {block.type === 'picker' ? (
+                            <div style={{ fontSize: 12, color: '#666' }}>
+                              Pricing options are available for Picker. Use Mode (None/Added/Multiplier) and Value fields on each option card.
                             </div>
-                          </>
-                        )}
-                      </Card>
+                          ) : (
+                            <>
+                              <InlineStack>
+                                <div style={{ width: 220, marginRight: 8 }}>
+                                  <Select
+                                    label="Mode"
+                                    options={[
+                                      { label: "None", value: "none" },
+                                      { label: "Added", value: "added" },
+                                      { label: "Multiplier", value: "multiplier" },
+                                    ]}
+                                    value={block.pricing?.mode || "none"}
+                                    onChange={(v) => updateBlock(idx, { pricing: { ...(block.pricing || {}), mode: v } })}
+                                  />
+                                </div>
+                                <div style={{ width: 220 }}>
+                                  <TextField
+                                    label="Value"
+                                    type="number"
+                                    step="any"
+                                    value={String(block.pricing?.value ?? 0)}
+                                    onChange={(v) => {
+                                      const newPricing = { ...(block.pricing || {}), value: parseFloat(v) || 0 };
+                                      updateBlock(idx, { pricing: newPricing });
+                                    }}
+                                  />
+                                </div>
+                              </InlineStack>
+                              <div style={{ fontSize: 12, color: '#666', marginTop: 6 }}>
+                                Added is a fixed extra charge, Multiplier applies a multiplier to unit price (per cm).
+                              </div>
+                            </>
+                          )}
+                        </Card>
+                      )}
 
                       {/* Type Specific */}
                       {block.type === "picker" && (
@@ -836,23 +894,25 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
                       <InlineStack>
                             <div style={{ width: 220, marginRight: 8 }}>
                         <TextField
-                          label="Min Width (inch)"
+                          label="Min Width (cm)"
                           type="number"
+                          step="0.1"
                                 value={String(block.limits?.width?.min ?? 0)}
                                 onChange={(v) => updateBlock(idx, { limits: { ...(block.limits || {}), width: { ...(block.limits?.width || {}), min: parseFloat(v) } } })}
                         />
                             </div>
                             <div style={{ width: 220 }}>
                         <TextField
-                          label="Max Width (inch)"
+                          label="Max Width (cm)"
                           type="number"
+                          step="0.1"
                                 value={String(block.limits?.width?.max ?? 0)}
                                 onChange={(v) => updateBlock(idx, { limits: { ...(block.limits || {}), width: { ...(block.limits?.width || {}), max: parseFloat(v) } } })}
                         />
                             </div>
                       </InlineStack>
                           <Banner tone="subdued">
-                            <p>The "Per inch" value in the Pricing section sets the reference width. The price for this width is the "New Base Price" (Base Price + all option costs). The final price is then calculated based on the customer's actual width input.</p>
+                            <p>Width limits in centimeters. The final price is calculated by multiplying the unit price (per cm) with the customer's width input.</p>
                           </Banner>
                     </BlockStack>
                 )}
@@ -911,11 +971,23 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
                         <InlineStack>
                           <div style={{ width: 220, marginRight: 8 }}>
                             <TextField
-                              label={`${block.title || block.id} - Width (inch)`}
+                              label={`${block.title || block.id} - Width (cm)`}
                               type="number"
-                              step="any"
+                              step="0.1"
+                              min={block.limits?.width?.min || 0}
+                              max={block.limits?.width?.max || 1000}
                               value={String(preview[block.id]?.width ?? '')}
                               onChange={(v)=> setPreview((p)=> ({ ...p, [block.id]: { ...(p[block.id]||{}), width: v } }))}
+                              error={(() => {
+                                const width = parseFloat(preview[block.id]?.width);
+                                if (width && block.limits?.width?.min && width < block.limits.width.min) {
+                                  return `Minimum genişlik ${block.limits.width.min} cm olmalıdır`;
+                                }
+                                if (width && block.limits?.width?.max && width > block.limits.width.max) {
+                                  return `Maksimum genişlik ${block.limits.width.max} cm olmalıdır`;
+                                }
+                                return '';
+                              })()}
                             />
                           </div>
                         </InlineStack>
@@ -943,32 +1015,51 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
                     </div>
                   ))}
 
+                  {/* Validation Message */}
+                  {getValidationMessage && (
+                    <Banner tone="warning">
+                      <p>{getValidationMessage}</p>
+                    </Banner>
+                  )}
+
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div style={{ color: '#666' }}>
                       Currency: {config.currency || 'USD'}
                     </div>
-                    <div style={{ fontSize: 20, fontWeight: 600 }}>
-                      Total: {(() => {
-                        try {
-                          // Ensure height is not passed to the pricing function
-                          const selectionsForPricing = JSON.parse(JSON.stringify(preview));
-                          for (const block of blocks) {
-                            if (block.type === 'area' && selectionsForPricing[block.id]) {
-                              delete selectionsForPricing[block.id].height;
+                    {hasValidSelections ? (
+                      <div style={{ fontSize: 20, fontWeight: 600 }}>
+                        Total: {(() => {
+                          try {
+                            // Ensure height is not passed to the pricing function
+                            const selectionsForPricing = JSON.parse(JSON.stringify(preview));
+                            for (const block of blocks) {
+                              if (block.type === 'area' && selectionsForPricing[block.id]) {
+                                delete selectionsForPricing[block.id].height;
+                              }
                             }
-                          }
 
-                          const t = computeTotalPrice({ config: blocks, selections: selectionsForPricing });
-                          return `${(t || 0).toFixed(2)} ${config.currency || ''}`.trim();
-                        } catch (e) {
-                          console.error("Price calculation error:", e);
-                          return `0.00 ${config.currency || ''}`.trim();
-                        }
-                      })()}
-                    </div>
+                            const t = computeTotalPrice({ config: blocks, selections: selectionsForPricing });
+                            return `${(t || 0).toFixed(2)} ${config.currency || ''}`.trim();
+                          } catch (e) {
+                            console.error("Price calculation error:", e);
+                            return `0.00 ${config.currency || ''}`.trim();
+                          }
+                        })()}
+                      </div>
+                    ) : (
+                      <div style={{ fontSize: 16, color: '#666', fontStyle: 'italic' }}>
+                        Fiyat hesaplanabilmesi için gerekli seçimleri yapınız
+                      </div>
+                    )}
                   </div>
                   <div style={{ marginTop: '1rem' }}>
-                    <Button onClick={handleAddToCart} variant="primary">Add to Cart (Test)</Button>
+                    <Button 
+                      onClick={handleAddToCart} 
+                      variant="primary" 
+                      disabled={!hasValidSelections}
+                    >
+                      Add to Cart (Test)
+                    </Button>
                   </div>
                 </BlockStack>
               </Card>
