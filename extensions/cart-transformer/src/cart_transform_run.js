@@ -69,9 +69,17 @@ function computeTotalPrice({ config, selections }) {
     }
   }
 
-  // Multiplier unit price'a eklenir
   // Multiplier direkt çarpar, etkisiz eleman 1
   const newUnitPrice = (unitPrice + addedSum) * (multiplierValueSum || 1);
+
+  // Debug için console.log ekleyelim
+  console.log('🔍 CART TRANSFORMER DEBUG:', {
+    unitPrice,
+    addedSum,
+    multiplierValueSum,
+    newUnitPrice,
+    customerWidth: toNumber(selections?.[config.find((b) => b.type === "area" && b.enabled)?.id]?.width, 0)
+  });
 
   const areaBlock = config.find((b) => b.type === "area" && b.enabled);
   if (!areaBlock) {

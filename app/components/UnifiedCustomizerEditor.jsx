@@ -141,6 +141,43 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
     return true;
   }, [preview, getFirstPickerBlock, getAreaBlock]);
 
+  // Preview'da dinamik fiyat hesaplama
+  const calculatePreviewPrice = useCallback((option, currentTotal) => {
+    if (option.pricing?.mode === 'multiplier') {
+      return currentTotal * option.pricing.value;
+    } else if (option.pricing?.mode === 'added') {
+      return option.pricing.value;
+    }
+    return 0;
+  }, []);
+
+  // Fiyat gösterimini kontrol et
+  const shouldShowPrice = useCallback((option) => {
+    // Pricing yoksa fiyat gösterilmez
+    if (!option.pricing) return false;
+    
+    // show: false ise fiyat gösterilmez
+    if (option.pricing.show === false) return false;
+    
+    // show: true veya undefined ise fiyat gösterilir
+    return true;
+  }, []);
+
+  // Mevcut toplam fiyatı hesapla
+  const currentTotalPrice = useMemo(() => {
+    try {
+      const selectionsForPricing = JSON.parse(JSON.stringify(preview));
+      for (const block of blocks) {
+        if (block.type === 'area' && selectionsForPricing[block.id]) {
+          delete selectionsForPricing[block.id].height;
+        }
+      }
+      return computeTotalPrice({ config: blocks, selections: selectionsForPricing });
+    } catch (e) {
+      return 0;
+    }
+  }, [preview, blocks]);
+
   const getValidationMessage = useMemo(() => {
     if (getFirstPickerBlock && !preview[getFirstPickerBlock.id]) {
       return `Lütfen önce "${getFirstPickerBlock.title || getFirstPickerBlock.id}" seçimini yapınız.`;
@@ -589,6 +626,13 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
                                     onChange={(v) => updatePickerOption(idx, oIdx, { pricing: { ...(opt.pricing || {}), value: parseFloat(v) || 0 } })}
                               />
                             </div>
+                            <div style={{ width: 180 , marginBottom: 10}}>
+                              <Checkbox
+                                label="Show price"
+                                checked={opt.pricing?.show !== false}
+                                onChange={(v) => updatePickerOption(idx, oIdx, { pricing: { ...(opt.pricing || {}), show: v } })}
+                              />
+                            </div>
                             
                                 <div>
                                   <Button tone="critical" variant="tertiary" onClick={() => removePickerOption(idx, oIdx)}>Delete</Button>
@@ -758,6 +802,17 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
                                                         onChange={(v) => {
                                                           const options = [...(item.options || [])];
                                                           options[oIdx] = { ...options[oIdx], pricing: { ...(opt.pricing || {}), value: parseFloat(v) || 0 } };
+                                                          updateNestedItem(idx, nIdx, itemIdx, { options });
+                                                        }}
+                                                      />
+                                                    </div>
+                                                    <div style={{ width: 160 }}>
+                                                      <Checkbox
+                                                        label="Show price"
+                                                        checked={opt.pricing?.show !== false}
+                                                        onChange={(v) => {
+                                                          const options = [...(item.options || [])];
+                                                          options[oIdx] = { ...options[oIdx], pricing: { ...(opt.pricing || {}), show: v } };
                                                           updateNestedItem(idx, nIdx, itemIdx, { options });
                                                         }}
                                                       />
@@ -935,7 +990,23 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
                           <div style={{ flex: 1, marginRight: 8 }}>
                             <Select
                               label={block.title || block.id}
-                              options={[{ label: 'Select', value: '' }, ...(block.options||[]).map(o=>({ label: o.label, value: o.value }))]}
+                              options={[
+                                { label: 'Select', value: '' }, 
+                                ...(block.options||[]).map(o => {
+                                  const priceEffect = calculatePreviewPrice(o, currentTotalPrice);
+                                  let label = o.label;
+                                  
+                                  if (priceEffect > 0 && shouldShowPrice(o)) {
+                                    if (o.pricing?.mode === 'multiplier') {
+                                      label = `${o.label} (+$${priceEffect.toFixed(2)})`;
+                                    } else if (o.pricing?.mode === 'added') {
+                                      label = `${o.label} (+$${priceEffect.toFixed(2)})`;
+                                    }
+                                  }
+                                  
+                                  return { label, value: o.value };
+                                })
+                              ]}
                               value={preview[block.id] ?? ''}
                               onChange={(v)=> setPreview((p)=> ({ ...p, [block.id]: v }))}
                             />
@@ -1002,7 +1073,23 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
                                 <div key={`prev-n-item-${item.id}`} style={{ marginTop: 6 }}>
                                   <Select
                                     label={item.title || item.id}
-                                    options={[{ label: 'Select', value: '' }, ...(item.options||[]).map(o=>({ label: o.label, value: o.value }))]}
+                                    options={[
+                                      { label: 'Select', value: '' }, 
+                                                                              ...(item.options||[]).map(o => {
+                                          const priceEffect = calculatePreviewPrice(o, currentTotalPrice);
+                                          let label = o.label;
+                                          
+                                          if (priceEffect > 0 && shouldShowPrice(o)) {
+                                            if (o.pricing?.mode === 'multiplier') {
+                                              label = `${o.label} (+$${priceEffect.toFixed(2)})`;
+                                            } else if (o.pricing?.mode === 'added') {
+                                              label = `${o.label} (+$${priceEffect.toFixed(2)})`;
+                                            }
+                                          }
+                                          
+                                          return { label, value: o.value };
+                                        })
+                                    ]}
                                     value={preview[item.id] ?? ''}
                                     onChange={(v)=> setPreview((p)=> ({ ...p, [item.id]: v }))}
                                   />

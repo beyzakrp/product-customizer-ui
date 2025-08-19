@@ -67,13 +67,27 @@ export function computeTotalPrice({ config, selections }) {
   const newUnitPrice = (unitPrice + addedSum) * (multiplierValueSum || 1);
   
   // Debug için console.log ekleyelim
-  console.log('Pricing Debug:', {
+  const debugInfo = {
     unitPrice,
     addedSum,
     multiplierValueSum,
     newUnitPrice,
-    customerWidth: toNumber(selections?.[config.find((b) => b.type === "area" && b.enabled)?.id]?.width, 0)
-  });
+    customerWidth: toNumber(selections?.[config.find((b) => b.type === "area" && b.enabled)?.id]?.width, 0),
+    finalPrice: toNumber(selections?.[config.find((b) => b.type === "area" && b.enabled)?.id]?.width, 0) * newUnitPrice,
+    config: config.filter(b => b.type === 'picker' && b.enabled).map(b => ({
+      id: b.id,
+      selection: selections?.[b.id],
+      options: b.options?.map(o => ({ value: o.value, pricing: o.pricing }))
+    }))
+  };
+  
+  console.log('🔍 PRICING DEBUG:', debugInfo);
+  console.log('💰 Unit Price:', unitPrice);
+  console.log('➕ Added Sum:', addedSum);
+  console.log('✖️ Multiplier Sum:', multiplierValueSum);
+  console.log('🎯 New Unit Price:', newUnitPrice);
+  console.log('📏 Customer Width:', debugInfo.customerWidth);
+  console.log('💵 Final Price:', debugInfo.finalPrice);
 
   // --- STAGE 2: Calculate Final Price based on Width ---
   const areaBlock = config.find((b) => b.type === "area" && b.enabled);

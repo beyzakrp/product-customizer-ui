@@ -3,7 +3,7 @@
 client_id = "f1c42fe6630285441b2264d62361d0a8"
 name = "product-customizer-ui"
 handle = "product-customizer-ui"
-application_url = "https://rwanda-karaoke-porcelain-wv.trycloudflare.com"
+application_url = "https://hanging-need-verbal-couple.trycloudflare.com"
 embedded = true
 
 [build]
@@ -26,7 +26,7 @@ api_version = "2025-07"
 scopes = "write_products,read_products,write_product_listings,read_product_listings"
 
 [auth]
-redirect_urls = ["https://rwanda-karaoke-porcelain-wv.trycloudflare.com/auth/callback", "https://rwanda-karaoke-porcelain-wv.trycloudflare.com/auth/shopify/callback", "https://rwanda-karaoke-porcelain-wv.trycloudflare.com/api/auth/callback"]
+redirect_urls = ["https://hanging-need-verbal-couple.trycloudflare.com/auth/callback", "https://hanging-need-verbal-couple.trycloudflare.com/auth/shopify/callback", "https://hanging-need-verbal-couple.trycloudflare.com/api/auth/callback"]
 
 [pos]
 embedded = false
