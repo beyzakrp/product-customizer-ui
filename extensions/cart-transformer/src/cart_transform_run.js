@@ -69,8 +69,9 @@ function computeTotalPrice({ config, selections }) {
     }
   }
 
-  const multiplierEffect = unitPrice * multiplierValueSum;
-  const newUnitPrice = unitPrice + addedSum + multiplierEffect;
+  // Multiplier unit price'a eklenir
+  // Multiplier direkt çarpar, etkisiz eleman 1
+  const newUnitPrice = (unitPrice + addedSum) * (multiplierValueSum || 1);
 
   const areaBlock = config.find((b) => b.type === "area" && b.enabled);
   if (!areaBlock) {

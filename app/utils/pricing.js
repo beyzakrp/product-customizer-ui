@@ -63,8 +63,17 @@ export function computeTotalPrice({ config, selections }) {
     }
   }
 
-  const multiplierEffect = unitPrice * multiplierValueSum;
-  const newUnitPrice = unitPrice + addedSum + multiplierEffect;
+  // Multiplier direkt çarpar, etkisiz eleman 1
+  const newUnitPrice = (unitPrice + addedSum) * (multiplierValueSum || 1);
+  
+  // Debug için console.log ekleyelim
+  console.log('Pricing Debug:', {
+    unitPrice,
+    addedSum,
+    multiplierValueSum,
+    newUnitPrice,
+    customerWidth: toNumber(selections?.[config.find((b) => b.type === "area" && b.enabled)?.id]?.width, 0)
+  });
 
   // --- STAGE 2: Calculate Final Price based on Width ---
   const areaBlock = config.find((b) => b.type === "area" && b.enabled);
