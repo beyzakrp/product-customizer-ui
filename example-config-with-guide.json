@@ -1,0 +1,469 @@
+[
+  {
+    "type": "config",
+    "title": "Curtain Customizer",
+    "enabled": true,
+    "show_price": true,
+    "currency": "USD",
+    "base_price": 136.1,
+    "step_order": [
+      "headerPicker",
+      "areaSize",
+      "lining",
+      "side-hem-trim",
+      "tie-back"
+    ],
+    "unit_price": 2.63
+  },
+  {
+    "id": "headerPicker",
+    "type": "picker",
+    "title": "Header Type",
+    "enabled": true,
+    "isNested": true,
+    "hasGuide": true,
+    "guide": {
+      "enabled": true,
+      "title": "Measurement Guidelines",
+      "sections": [
+        {
+          "id": "grommet-top-guide",
+          "title": "Grommet Top",
+          "description": "Width = Rod/Track Width * Fullness/Number of Panels (2.0x Fullness is recommended)\n\nLength = 1.5 inches + Measure from the very top of the rod to the floor + Bottom\n\nDifferent Bottom Measurement\n\n1/2\" Above the Floor: -1/2\"\nKiss the Floor: 0\nPuddling: +2\"\n\nFor more puddling, add a longer bottom.",
+          "photoGallery": [
+            {
+              "id": "img1",
+              "url": "https://via.placeholder.com/400x300",
+              "alt": "Grommet Top Measurement Diagram",
+              "caption": "Width and Length measurement guide for Grommet Top"
+            }
+          ]
+        },
+        {
+          "id": "back-tab-guide", 
+          "title": "Back Tab",
+          "description": "Same measurement principles apply for Back Tab curtains.\n\nWidth = Rod/Track Width * Fullness/Number of Panels (2.0x Fullness is recommended)\n\nLength measurement follows the same guidelines as Grommet Top.",
+          "photoGallery": [
+            {
+              "id": "img2",
+              "url": "https://via.placeholder.com/400x300",
+              "alt": "Back Tab Measurement Diagram",
+              "caption": "Width and Length measurement guide for Back Tab"
+            }
+          ]
+        }
+      ]
+    },
+    "pricing": {
+      "mode": "none",
+      "value": 0
+    },
+    "options": [
+      {
+        "label": "Grommet Top ",
+        "value": "grommet-top",
+        "media": {
+          "type": "url",
+          "url": "https://www.curtarra.com/cdn/shop/files/1_0_52_1gromment_top_375x375_crop_center.jpg?v=1718349230"
+        },
+        "pricing": {
+          "mode": "multiplier",
+          "value": 1
+        }
+      },
+      {
+        "label": "Back Tab",
+        "value": "back-tab",
+        "media": {
+          "type": "url",
+          "url": "https://www.curtarra.com/cdn/shop/files/2024-back-tab_375x375_crop_center.jpg?v=1718349557"
+        },
+        "pricing": {
+          "mode": "multiplier",
+          "value": 1
+        }
+      },
+      {
+        "label": "Pinch Pleat-Double",
+        "value": "pinch-pleat-double",
+        "media": {
+          "type": "url",
+          "url": "https://www.curtarra.com/cdn/shop/files/2024-pinch_pleat-double_375x375_crop_center.jpg?v=1718349489"
+        },
+        "pricing": {
+          "mode": "multiplier",
+          "value": 2
+        }
+      },
+      {
+        "label": "Pinch Pleat-Triple ",
+        "value": "pinch-pleat-triple",
+        "media": {
+          "type": "url",
+          "url": "https://www.curtarra.com/cdn/shop/files/2024-pinch_pleat-triple_375x375_crop_center.jpg?v=1718349521"
+        },
+        "pricing": {
+          "mode": "multiplier",
+          "value": 2.5
+        }
+      },
+      {
+        "label": "Rod Pocket",
+        "value": "rod-pocket",
+        "media": {
+          "type": "url",
+          "url": "https://www.curtarra.com/cdn/shop/files/2024-rod_pocket_375x375_crop_center.jpg?v=1718349453"
+        },
+        "pricing": {
+          "mode": "multiplier",
+          "value": 1
+        }
+      },
+      {
+        "label": "Flat Panel",
+        "value": "flat-panel",
+        "media": {
+          "type": "url",
+          "url": "https://www.curtarra.com/cdn/shop/files/flatpanel_563999cf-4b7d-4d9e-b003-46104922489c_375x375_crop_center.jpg?v=1718349607"
+        },
+        "pricing": {
+          "mode": "multiplier",
+          "value": 1
+        }
+      },
+      {
+        "label": "Tab Top",
+        "value": "tab-top",
+        "media": {
+          "type": "url",
+          "url": "https://www.curtarra.com/cdn/shop/files/toptab_375x375_crop_center.jpg?v=1718349585"
+        },
+        "pricing": {
+          "mode": "multiplier",
+          "value": 1
+        }
+      },
+      {
+        "label": "Euro Pleat-Double",
+        "value": "euro-pleat-double",
+        "media": {
+          "type": "url",
+          "url": "https://www.curtarra.com/cdn/shop/files/2024-euro-pleat-double_375x375_crop_center.jpg?v=1723011948"
+        },
+        "pricing": {
+          "mode": "multiplier",
+          "value": 2
+        }
+      },
+      {
+        "label": "Euro Pleat-Triple",
+        "value": "euro-pleat-triple",
+        "media": {
+          "type": "url",
+          "url": "https://www.curtarra.com/cdn/shop/files/2024-euro-pleat-triple_375x375_crop_center.jpg?v=1723024615"
+        },
+        "pricing": {
+          "mode": "multiplier",
+          "value": 2.5
+        }
+      },
+      {
+        "label": "Ripple Fold ",
+        "value": "ripple-fold",
+        "media": {
+          "type": "url",
+          "hex": "#000000",
+          "url": "https://www.curtarra.com/cdn/shop/files/ripplefold_200x200_crop_center.jpg?v=1723024615"
+        },
+        "added": 0,
+        "pricing": {
+          "mode": "multiplier",
+          "value": 1
+        }
+      }
+    ],
+    "nested": [
+      {
+        "when": {
+          "parentId": "headerPicker",
+          "equals": "grommet-top"
+        },
+        "items": [
+          {
+            "id": "grommetColor",
+            "type": "picker",
+            "title": "Grommet Color",
+            "enabled": true,
+            "isNested": false,
+            "pricing": {
+              "mode": "none",
+              "value": 0
+            },
+            "options": [
+              {
+                "label": "Silver",
+                "value": "silver",
+                "media": {
+                  "type": "url",
+                  "url": "https://www.curtarra.com/cdn/shop/files/silver_375x375_crop_center.jpg?v=1718349338"
+                },
+                "pricing": {
+                  "mode": "none",
+                  "value": 0
+                }
+              },
+              {
+                "label": "Gold",
+                "value": "gold",
+                "media": {
+                  "type": "url",
+                  "url": "https://www.curtarra.com/cdn/shop/files/gold_375x375_crop_center.jpg?v=1718349410"
+                },
+                "pricing": {
+                  "mode": "none",
+                  "value": 0
+                }
+              },
+              {
+                "label": "Black",
+                "value": "black",
+                "media": {
+                  "type": "url",
+                  "url": "https://www.curtarra.com/cdn/shop/files/black_1_375x375_crop_center.jpg?v=1718349395"
+                },
+                "pricing": {
+                  "mode": "none",
+                  "value": 0
+                }
+              },
+              {
+                "label": "Bronze",
+                "value": "bronze",
+                "media": {
+                  "type": "url",
+                  "url": "https://www.curtarra.com/cdn/shop/files/bronze_375x375_crop_center.jpg?v=1718349378"
+                },
+                "pricing": {
+                  "mode": "none",
+                  "value": 0
+                }
+              }
+            ],
+            "nested": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "areaSize",
+    "type": "area",
+    "title": "Size",
+    "enabled": true,
+    "unit": "cm",
+    "limits": {
+      "width": {
+        "min": 52.8,
+        "max": 304.8
+      },
+      "height": {
+        "min": 50.8,
+        "max": 1016
+      }
+    },
+    "pricing": {
+      "mode": "multiplier",
+      "value": 100,
+      "per": "sqm"
+    }
+  },
+  {
+    "id": "lining",
+    "type": "picker",
+    "title": "Lining",
+    "enabled": true,
+    "isNested": false,
+    "hasGuide": false,
+    "pricing": {
+      "mode": "none",
+      "value": 0
+    },
+    "options": [
+      {
+        "label": "Unlined (+$0)",
+        "value": "unlined",
+        "media": {
+          "type": "url",
+          "hex": "#000000",
+          "url": "https://www.curtarra.com/cdn/shop/files/2024unlined_375x375_crop_center.jpg?v=1718349639"
+        },
+        "added": 0,
+        "pricing": {
+          "mode": "none"
+        }
+      },
+      {
+        "label": "White Lining",
+        "value": "white-lining",
+        "media": {
+          "type": "url",
+          "hex": "#000000",
+          "url": "https://www.curtarra.com/cdn/shop/files/2024white_lining_375x375_crop_center.jpg?v=1718349674"
+        },
+        "added": 0,
+        "pricing": {
+          "mode": "multiplier",
+          "value": 0.15
+        }
+      },
+      {
+        "label": "Cotton Lining",
+        "value": "option-3",
+        "media": {
+          "type": "url",
+          "hex": "#000000",
+          "url": "https://www.curtarra.com/cdn/shop/files/COTTON-LINING-1_375x375_crop_center.jpg?v=1747363055"
+        },
+        "added": 0,
+        "pricing": {
+          "mode": "multiplier",
+          "value": 0.3
+        }
+      },
+      {
+        "label": "Triple Weave Lining",
+        "value": "option-4",
+        "media": {
+          "type": "url",
+          "hex": "#000000",
+          "url": "https://www.curtarra.com/cdn/shop/files/2024triple_weave_lining_375x375_crop_center.jpg?v=1718349735"
+        },
+        "added": 0,
+        "pricing": {
+          "mode": "multiplier",
+          "value": 0.2
+        }
+      },
+      {
+        "label": "Blackout Lining",
+        "value": "option-5",
+        "media": {
+          "type": "url",
+          "hex": "#000000",
+          "url": "https://www.curtarra.com/cdn/shop/files/2024BLACKOUT_LINING_375x375_crop_center.jpg?v=1718776141"
+        },
+        "added": 0,
+        "pricing": {
+          "mode": "multiplier",
+          "value": 0.15
+        }
+      },
+      {
+        "label": "Black Lining",
+        "value": "option-6",
+        "media": {
+          "type": "url",
+          "hex": "#000000",
+          "url": "https://www.curtarra.com/cdn/shop/files/2024black_lining2_375x375_crop_center.jpg?v=1718349702"
+        },
+        "added": 0,
+        "pricing": {
+          "mode": "multiplier",
+          "value": 0.15
+        }
+      }
+    ],
+    "nested": []
+  },
+  {
+    "id": "side-hem-trim",
+    "type": "picker",
+    "title": "Side Hem Trim",
+    "enabled": true,
+    "isNested": false,
+    "hasGuide": false,
+    "pricing": {
+      "mode": "none",
+      "value": 0
+    },
+    "options": [
+      {
+        "label": "Original Side Hem (+$0)",
+        "value": "original-side-ham",
+        "media": {
+          "type": "url",
+          "hex": "#000000",
+          "url": "https://www.curtarra.com/cdn/shop/files/Sabrina-dove-white-5_375x375_crop_center.jpg?v=1724311171"
+        },
+        "added": 0,
+        "pricing": {
+          "mode": "none"
+        }
+      },
+      {
+        "label": "Band Brown",
+        "value": "band-brown",
+        "media": {
+          "type": "url",
+          "hex": "#000000",
+          "url": "https://www.curtarra.com/cdn/shop/files/Sabrina_dove_white_band_3_200x200_crop_center.png?v=1750301534"
+        },
+        "added": 0,
+        "pricing": {
+          "mode": "multiplier",
+          "value": 0.15
+        }
+      },
+      {
+        "label": "Band Aqua",
+        "value": "band-aqua",
+        "media": {
+          "type": "url",
+          "hex": "#000000",
+          "url": "https://www.curtarra.com/cdn/shop/files/Sabrina_dove_white_band_1_200x200_crop_center.png?v=1750303708"
+        },
+        "added": 0,
+        "pricing": {
+          "mode": "added",
+          "value": 381
+        }
+      }
+    ],
+    "nested": []
+  },
+  {
+    "id": "tie-back",
+    "type": "picker",
+    "title": "Tie Back",
+    "enabled": true,
+    "isNested": false,
+    "hasGuide": false,
+    "pricing": {
+      "mode": "none",
+      "value": 0
+    },
+    "options": [
+      {
+        "label": "No Tieback Required",
+        "value": "no-tieback-required",
+        "media": {
+          "type": "url",
+          "hex": "#000000",
+          "url": "https://www.curtarra.com/cdn/shop/files/No-Tieback_375x375_crop_center.jpg?v=1741757327"
+        },
+        "added": 0
+      },
+      {
+        "label": "Free Matching Tieback",
+        "value": "free-matching-tieback",
+        "media": {
+          "type": "url",
+          "hex": "#000000",
+          "url": "https://www.curtarra.com/cdn/shop/files/Marching-Tieback_375x375_crop_center.jpg?v=1741757386"
+        },
+        "added": 0
+      }
+    ],
+    "nested": []
+  }
+]

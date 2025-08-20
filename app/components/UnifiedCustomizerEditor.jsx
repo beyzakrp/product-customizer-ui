@@ -367,6 +367,86 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
     updateBlock(blockIndex, { nested });
   };
 
+  // Guide Section Helper Functions
+  const addGuideSection = (blockIndex) => {
+    const blk = blocks[blockIndex];
+    updateBlock(blockIndex, { 
+      guide: { 
+        enabled: true, 
+        title: "Measurement Guidelines",
+        sections: []
+      } 
+    });
+  };
+
+  const addGuideSectionItem = (blockIndex) => {
+    const blk = blocks[blockIndex];
+    const guide = { ...(blk.guide || {}) };
+    const sections = [...(guide.sections || [])];
+    sections.push({
+      id: `section-${Date.now()}`,
+      title: "",
+      description: "",
+      photoGallery: []
+    });
+    guide.sections = sections;
+    updateBlock(blockIndex, { guide });
+  };
+
+  const updateGuideSection = (blockIndex, sectionIndex, patch) => {
+    const blk = blocks[blockIndex];
+    const guide = { ...(blk.guide || {}) };
+    const sections = [...(guide.sections || [])];
+    sections[sectionIndex] = { ...sections[sectionIndex], ...patch };
+    guide.sections = sections;
+    updateBlock(blockIndex, { guide });
+  };
+
+  const removeGuideSection = (blockIndex, sectionIndex) => {
+    const blk = blocks[blockIndex];
+    const guide = { ...(blk.guide || {}) };
+    const sections = (guide.sections || []).filter((_, i) => i !== sectionIndex);
+    guide.sections = sections;
+    updateBlock(blockIndex, { guide });
+  };
+
+  const addGuidePhoto = (blockIndex, sectionIndex) => {
+    const blk = blocks[blockIndex];
+    const guide = { ...(blk.guide || {}) };
+    const sections = [...(guide.sections || [])];
+    const photoGallery = [...(sections[sectionIndex]?.photoGallery || [])];
+    photoGallery.push({
+      id: `photo-${Date.now()}`,
+      url: "",
+      alt: "",
+      caption: ""
+    });
+    sections[sectionIndex] = { ...sections[sectionIndex], photoGallery };
+    guide.sections = sections;
+    updateBlock(blockIndex, { guide });
+  };
+
+  const updateGuidePhoto = (blockIndex, sectionIndex, photoIndex, patch) => {
+    const blk = blocks[blockIndex];
+    const guide = { ...(blk.guide || {}) };
+    const sections = [...(guide.sections || [])];
+    const photoGallery = [...(sections[sectionIndex]?.photoGallery || [])];
+    photoGallery[photoIndex] = { ...photoGallery[photoIndex], ...patch };
+    sections[sectionIndex] = { ...sections[sectionIndex], photoGallery };
+    guide.sections = sections;
+    updateBlock(blockIndex, { guide });
+  };
+
+  const removeGuidePhoto = (blockIndex, sectionIndex, photoIndex) => {
+    const blk = blocks[blockIndex];
+    const guide = { ...(blk.guide || {}) };
+    const sections = [...(guide.sections || [])];
+    const photoGallery = (sections[sectionIndex]?.photoGallery || []).filter((_, i) => i !== photoIndex);
+    sections[sectionIndex] = { ...sections[sectionIndex], photoGallery };
+    guide.sections = sections;
+    updateBlock(blockIndex, { guide });
+  };
+
   const handleSave = () => {
     onSave(blocks);
   };
@@ -572,6 +652,12 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
                             label="Nested (1 level)"
                             checked={!!block.isNested}
                             onChange={(v) => updateBlock(idx, { isNested: v })}
+                          />
+                          
+                          <Checkbox
+                            label="Has Guide Section"
+                            checked={!!block.hasGuide}
+                            onChange={(v) => updateBlock(idx, { hasGuide: v })}
                           />
 
                           {(block.options || []).map((opt, oIdx) => (
@@ -875,6 +961,113 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
                                     </BlockStack>
                                   </Box>
                                 ))}
+                              </BlockStack>
+                            </Box>
+                          )}
+
+                          {block.hasGuide && (
+                            <Box paddingBlockStart="400" borderBlockStart="divider" marginBlockStart="400">
+                              <BlockStack gap="400">
+                                <InlineStack align="space-between">
+                                  <Text variant="headingMd" as="h3">Guide Section</Text>
+                                  <Button variant="tertiary" onClick={() => addGuideSection(idx)}>Add Guide Section</Button>
+                                </InlineStack>
+                                <Banner tone="info" onDismiss={() => {}}>
+                                  Guide sections provide measurement guidelines and helpful information for customers.
+                                </Banner>
+                                
+                                {block.guide?.enabled && (
+                                  <Card sectioned>
+                                    <BlockStack gap="300">
+                                      <TextField
+                                        label="Guide Title"
+                                        value={block.guide?.title || ""}
+                                        onChange={(v) => updateBlock(idx, { 
+                                          guide: { 
+                                            ...(block.guide || {}), 
+                                            title: v,
+                                            enabled: true 
+                                          } 
+                                        })}
+                                      />
+                                      
+                                      {(block.guide?.sections || []).map((section, sIdx) => (
+                                        <Box key={sIdx} background="bg-surface-secondary" padding="300" borderRadius="200">
+                                          <BlockStack gap="300">
+                                            <InlineStack align="space-between">
+                                              <Text variant="headingSm" as="h4">Section {sIdx + 1}</Text>
+                                              <Button tone="critical" variant="tertiary" onClick={() => removeGuideSection(idx, sIdx)}>Remove Section</Button>
+                                            </InlineStack>
+                                            
+                                            <TextField
+                                              label="Section Title"
+                                              value={section.title || ""}
+                                              onChange={(v) => updateGuideSection(idx, sIdx, { title: v })}
+                                            />
+                                            
+                                            <TextField
+                                              label="Description"
+                                              multiline={4}
+                                              value={section.description || ""}
+                                              onChange={(v) => updateGuideSection(idx, sIdx, { description: v })}
+                                            />
+                                            
+                                            <Text variant="headingSm" as="h5">Photo Gallery</Text>
+                                            {(section.photoGallery || []).map((photo, pIdx) => (
+                                              <Card key={pIdx} sectioned>
+                                                <BlockStack gap="200">
+                                                  <InlineStack align="space-between">
+                                                    <Text variant="bodyMd" as="p">Photo {pIdx + 1}</Text>
+                                                    <Button tone="critical" variant="tertiary" onClick={() => removeGuidePhoto(idx, sIdx, pIdx)}>Remove Photo</Button>
+                                                  </InlineStack>
+                                                  
+                                                  <TextField
+                                                    label="Image URL"
+                                                    value={photo.url || ""}
+                                                    onChange={(v) => updateGuidePhoto(idx, sIdx, pIdx, { url: v })}
+                                                  />
+                                                  
+                                                  <TextField
+                                                    label="Alt Text"
+                                                    value={photo.alt || ""}
+                                                    onChange={(v) => updateGuidePhoto(idx, sIdx, pIdx, { alt: v })}
+                                                  />
+                                                  
+                                                  <TextField
+                                                    label="Caption"
+                                                    value={photo.caption || ""}
+                                                    onChange={(v) => updateGuidePhoto(idx, sIdx, pIdx, { caption: v })}
+                                                  />
+                                                  
+                                                  {photo.url && (
+                                                    <div style={{ marginTop: 8 }}>
+                                                      <Text variant="bodySm" as="p" color="subdued">Preview:</Text>
+                                                      <img
+                                                        src={photo.url}
+                                                        alt={photo.alt || "Preview"}
+                                                        style={{ 
+                                                          width: 150, 
+                                                          height: 100, 
+                                                          objectFit: 'cover', 
+                                                          borderRadius: 4, 
+                                                          border: '1px solid #ddd',
+                                                          marginTop: 4
+                                                        }}
+                                                      />
+                                                    </div>
+                                                  )}
+                                                </BlockStack>
+                                              </Card>
+                                            ))}
+                                            <Button variant="tertiary" onClick={() => addGuidePhoto(idx, sIdx)}>Add Photo</Button>
+                                          </BlockStack>
+                                        </Box>
+                                      ))}
+                                      
+                                      <Button variant="tertiary" onClick={() => addGuideSectionItem(idx)}>Add New Section</Button>
+                                    </BlockStack>
+                                  </Card>
+                                )}
                               </BlockStack>
                             </Box>
                           )}
