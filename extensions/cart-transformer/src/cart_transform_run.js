@@ -124,15 +124,22 @@ export function cartTransformRun(input) {
         console.log("Parsed config:", config);
         console.log("Parsed selections:", selections);
         
-        const newPrice = computeTotalPrice({ config, selections });
-        const currentPrice = parseFloat(line.cost.amountPerQuantity.amount);
+        const calculatedPrice = computeTotalPrice({ config, selections });
+        const shopifyPrice = parseFloat(line.cost.amountPerQuantity.amount);
         
-        console.log("Calculated price:", newPrice);
-        console.log("Current price:", currentPrice);
-        console.log("Price difference:", Math.abs(newPrice - currentPrice));
+        console.log("Calculated price:", calculatedPrice);
+        console.log("Shopify price:", shopifyPrice);
+        
+        // Shopify price ile calculated price karşılaştır
+        // Eğer Shopify price daha büyükse, onu kullan
+        // Eğer calculated price daha büyükse, onu kullan
+        const finalPrice = Math.max(calculatedPrice, shopifyPrice);
+        
+        console.log("Final price (max of both):", finalPrice);
+        console.log("Price difference:", Math.abs(finalPrice - shopifyPrice));
 
         // Update price only if it's calculated correctly and different from the current price
-        if (newPrice > 0 && Math.abs(newPrice - currentPrice) > 0.01) {
+        if (finalPrice > 0 && Math.abs(finalPrice - shopifyPrice) > 0.01) {
           console.log("Creating price update operation");
           const updateOperation = {
             lineUpdate: {
@@ -140,7 +147,7 @@ export function cartTransformRun(input) {
               price: {
                 adjustment: {
                   fixedPricePerUnit: {
-                    amount: newPrice.toFixed(2),
+                    amount: finalPrice.toFixed(2),
                   }
                 }
               }
