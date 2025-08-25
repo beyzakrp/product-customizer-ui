@@ -131,47 +131,37 @@ export function cartTransformRun(input) {
         const expandOperation = {
           expand: {
             cartLineId: line.id,
-            image: { 
-              url: line.merchandise.image?.url || "" 
-            },
+            attributes: [
+              {
+                key: "_Customizer-Enabled",
+                value: "true"
+              },
+              {
+                key: "_Customizer-Config",
+                value: configAttribute.value
+              },
+              {
+                key: "_Customizer-Selections", 
+                value: selectionsAttribute.value
+              },
+              {
+                key: "_Customizer-Price",
+                value: customizerPrice.toFixed(2)
+              },
+              {
+                key: "_Original-Price",
+                value: originalPrice.toFixed(2)
+              }
+            ],
             expandedCartItems: [
               {
-                merchandise: {
-                  productVariantId: line.merchandise.id,
-                  quantity: line.quantity
-                },
-                cost: {
-                  totalAmount: {
-                    amount: (customizerPrice * 100).toFixed(0), // dollars to cents
-                    currencyCode: line.cost.amountPerQuantity.currencyCode
+                merchandiseId: line.merchandise.id,
+                quantity: line.quantity,
+                price: {
+                  fixedPricePerUnit: {
+                    amount: customizerPrice.toFixed(2) // ondalıklı string
                   }
-                },
-                attributes: [
-                  {
-                    key: "_Customizer-Enabled",
-                    value: "true"
-                  },
-                  {
-                    key: "_Customizer-Config",
-                    value: configAttribute.value
-                  },
-                  {
-                    key: "_Customizer-Selections", 
-                    value: selectionsAttribute.value
-                  },
-                  {
-                    key: "_Customizer-Price",
-                    value: customizerPrice.toFixed(2)
-                  },
-                  {
-                    key: "_Original-Price",
-                    value: originalPrice.toFixed(2)
-                  },
-                  {
-                    key: "_Total-Price",
-                    value: customizerPrice.toFixed(2)
-                  }
-                ]
+                }
               }
             ]
           }
