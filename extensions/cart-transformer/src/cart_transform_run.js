@@ -117,15 +117,8 @@ export function cartTransformRun(input) {
           const perUnit = (customizerPrice / qty);
 
           operations.push({
-            expand: {
+            lineExpand: {
               cartLineId: line.id,
-              // attributes EXPAND seviyesinde olmalı
-              attributes: [
-                { key: "_Customizer-Enabled", value: "true" },
-                { key: "_Customizer-Config", value: configRaw },
-                { key: "_Customizer-Selections", value: selectionsRaw },
-                { key: "_Customizer-Price", value: customizerPrice.toFixed(2) }
-              ],
               expandedCartItems: [
                 {
                   merchandiseId: line.merchandise.id,
@@ -137,6 +130,7 @@ export function cartTransformRun(input) {
                       } 
                     } 
                   }
+                  // attributes: [...] // (gerekliyse buraya, her item içine koy)
                 }
               ]
             }
