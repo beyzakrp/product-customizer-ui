@@ -1,11 +1,13 @@
 // @ts-check
 
 /**
- * @typedef {import("../generated/api").CartTransformRunInput} CartTransformRunInput
- * @typedef {import("../generated/api").CartTransformRunResult} CartTransformRunResult
- * @typedef {import("../generated/api").ExpandOperation} ExpandOperation
+ * @typedef {import("../generated/api").CartTransformRunInput} RunInput
+ * @typedef {import("../generated/api").CartTransformRunResult} FunctionRunResult
  */
 
+/**
+ * @type {FunctionRunResult}
+ */
 const NO_CHANGES = {
   operations: [],
 };
@@ -96,92 +98,57 @@ function computeTotalPrice({ config, selections }) {
 }
 
 
-
 export function cartTransformRun(input) {
-  console.log("=== CART EXPAND DEBUG START ===");
-  console.log("Input cart lines:", input.cart.lines.length);
-  
   const operations = [];
-  
-  input.cart.lines.forEach((line, index) => {
-    console.log(`Processing line ${index}:`, line.id);
-    
-    const configAttribute = line.attributes.find(attr => attr.key === "customizer_config");
-    const selectionsAttribute = line.attributes.find(attr => attr.key === "customizer_selections");
-    
-    if (!configAttribute || !selectionsAttribute) {
-      console.log("Missing customizer attributes - config:", !!configAttribute, "selections:", !!selectionsAttribute);
-      return;
-    }
-    
-    try {
-      const config = JSON.parse(configAttribute.value);
-      const selections = JSON.parse(selectionsAttribute.value);
-      
-      console.log("Parsed config:", config);
-      console.log("Parsed selections:", selections);
-      
-      const customizerPrice = computeTotalPrice({ config, selections });
-      const originalPrice = parseFloat(line.cost.amountPerQuantity.amount) / 100; // cents to dollars
-      
-      console.log("Customizer price:", customizerPrice);
-      console.log("Original price:", originalPrice);
-      
-      if (customizerPrice > 0) {
-        const expandOperation = {
-          expand: {
-            cartLineId: line.id,
-            attributes: [
-              {
-                key: "_Customizer-Enabled",
-                value: "true"
-              },
-              {
-                key: "_Customizer-Config",
-                value: configAttribute.value
-              },
-              {
-                key: "_Customizer-Selections", 
-                value: selectionsAttribute.value
-              },
-              {
-                key: "_Customizer-Price",
-                value: customizerPrice.toFixed(2)
-              },
-              {
-                key: "_Original-Price",
-                value: originalPrice.toFixed(2)
-              }
-            ],
-            expandedCartItems: [
-              {
-                merchandiseId: line.merchandise.id,
-                quantity: line.quantity,
-                price: {
-                  fixedPricePerUnit: {
-                    amount: customizerPrice.toFixed(2) // ondalıklı string
+
+  input.cart.lines.forEach((line) => {
+    const configRaw = line.customizer_config?.value;
+    const selectionsRaw = line.customizer_selections?.value;
+
+    if (configRaw && selectionsRaw) {
+      try {
+        const config = JSON.parse(configRaw);
+        const selections = JSON.parse(selectionsRaw);
+        
+        const customizerPrice = computeTotalPrice({ config, selections });
+        if (customizerPrice > 0) {
+          // Birim fiyata çevir
+          const qty = Math.max(1, line.quantity || 1);
+          const perUnit = (customizerPrice / qty);
+
+          operations.push({
+            expand: {
+              cartLineId: line.id,
+              // attributes EXPAND seviyesinde olmalı
+              attributes: [
+                { key: "_Customizer-Enabled", value: "true" },
+                { key: "_Customizer-Config", value: configRaw },
+                { key: "_Customizer-Selections", value: selectionsRaw },
+                { key: "_Customizer-Price", value: customizerPrice.toFixed(2) }
+              ],
+              expandedCartItems: [
+                {
+                  merchandiseId: line.merchandise.id,
+                  quantity: line.quantity,
+                  price: { 
+                    adjustment: { 
+                      fixedPricePerUnit: { 
+                        amount: perUnit.toFixed(2) 
+                      } 
+                    } 
                   }
                 }
-              }
-            ]
-          }
-        };
-        
-        operations.push(expandOperation);
-        console.log("Created expand operation for line:", line.id);
+              ]
+            }
+          });
+        }
+      } catch (e) {
+        console.error("Cart Transform Error:", e.message, e.stack);
       }
-      
-    } catch (e) {
-      console.error("Cart Transform Error:", e.message, e.stack);
     }
   });
-  
-  console.log("Total expand operations:", operations.length);
-  console.log("=== CART EXPAND DEBUG END ===");
-  
-  if (operations.length === 0) {
-    return NO_CHANGES;
-  }
-  
-  return { operations };
+
+  return {
+    operations: operations.length > 0 ? operations : NO_CHANGES.operations,
+  };
 }

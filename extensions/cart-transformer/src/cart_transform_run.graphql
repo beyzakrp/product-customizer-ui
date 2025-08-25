@@ -3,6 +3,9 @@ query CartTransformRunInput {
     lines {
       id
       quantity
+      customizer_config: attribute(key: "customizer_config") { value }
+      customizer_selections: attribute(key: "customizer_selections") { value }
+      merchandise { __typename ... on ProductVariant { id } }
     }
   }
 }
