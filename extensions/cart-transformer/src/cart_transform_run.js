@@ -105,6 +105,12 @@ export function cartTransformRun(input) {
     const configRaw = line.customizer_config?.value;
     const selectionsRaw = line.customizer_selections?.value;
 
+    // If selling plan exists, skip lineExpand (Shopify doesn't allow it)
+    if (line.sellingPlanAllocation?.sellingPlan?.id) {
+      console.log("Selling plan detected, skipping lineExpand for line:", line.id);
+      return;
+    }
+
     if (configRaw && selectionsRaw) {
       try {
         const config = JSON.parse(configRaw);
@@ -112,13 +118,14 @@ export function cartTransformRun(input) {
         
         const customizerPrice = computeTotalPrice({ config, selections });
         if (customizerPrice > 0) {
-          // Birim fiyata çevir
           const qty = Math.max(1, line.quantity || 1);
           const perUnit = (customizerPrice / qty);
 
           operations.push({
             lineExpand: {
               cartLineId: line.id,
+              // Add debug attribute (Test the function is working)
+              attributes: [{ key: "_ct_hit", value: new Date().toISOString() }],
               expandedCartItems: [
                 {
                   merchandiseId: line.merchandise.id,
@@ -130,7 +137,6 @@ export function cartTransformRun(input) {
                       } 
                     } 
                   }
-                  // attributes: [...] // (gerekliyse buraya, her item içine koy)
                 }
               ]
             }
