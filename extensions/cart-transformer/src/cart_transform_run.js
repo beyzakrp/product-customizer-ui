@@ -3,7 +3,7 @@
 /**
  * @typedef {import("../generated/api").CartTransformRunInput} CartTransformRunInput
  * @typedef {import("../generated/api").CartTransformRunResult} CartTransformRunResult
- * @typedef {import("../generated/api").UpdateOperation} UpdateOperation
+ * @typedef {import("../generated/api").ExpandOperation} ExpandOperation
  */
 
 const NO_CHANGES = {
@@ -69,10 +69,8 @@ function computeTotalPrice({ config, selections }) {
     }
   }
 
-  // Multiplier direkt çarpar, etkisiz eleman 1
   const newUnitPrice = (unitPrice + addedSum) * (multiplierValueSum || 1);
 
-  // Debug için console.log ekleyelim
   console.log('🔍 CART TRANSFORMER DEBUG:', {
     unitPrice,
     addedSum,
@@ -89,12 +87,10 @@ function computeTotalPrice({ config, selections }) {
   const areaSelection = selections?.[areaBlock.id];
   const customerWidth = toNumber(areaSelection?.width, 0);
 
-  // Width 0 ise, fiyat hesaplanamaz
   if (customerWidth <= 0) {
     return 0;
   }
 
-  // Unit price ile width çarpılır
   const finalPrice = customerWidth * newUnitPrice;
   return finalPrice;
 }
@@ -102,75 +98,100 @@ function computeTotalPrice({ config, selections }) {
 
 
 export function cartTransformRun(input) {
-  console.log("=== CART TRANSFORM DEBUG START ===");
+  console.log("=== CART EXPAND DEBUG START ===");
   console.log("Input cart lines:", input.cart.lines.length);
   
-  const operations = input.cart.lines
-    .map((line, index) => {
-      console.log(`Processing line ${index}:`, line.id);
-      console.log("Line attributes:", line.attributes.map(attr => ({ key: attr.key, value: attr.value.substring(0, 100) + "..." })));
+  const operations = [];
+  
+  input.cart.lines.forEach((line, index) => {
+    console.log(`Processing line ${index}:`, line.id);
+    
+    const configAttribute = line.attributes.find(attr => attr.key === "customizer_config");
+    const selectionsAttribute = line.attributes.find(attr => attr.key === "customizer_selections");
+    
+    if (!configAttribute || !selectionsAttribute) {
+      console.log("Missing customizer attributes - config:", !!configAttribute, "selections:", !!selectionsAttribute);
+      return;
+    }
+    
+    try {
+      const config = JSON.parse(configAttribute.value);
+      const selections = JSON.parse(selectionsAttribute.value);
       
-      const configAttribute = line.attributes.find(attr => attr.key === "customizer_config");
-      const selectionsAttribute = line.attributes.find(attr => attr.key === "customizer_selections");
-
-      if (!configAttribute || !selectionsAttribute) {
-        console.log("Missing attributes - config:", !!configAttribute, "selections:", !!selectionsAttribute);
-        return null;
-      }
-
-      try {
-        const config = JSON.parse(configAttribute.value);
-        const selections = JSON.parse(selectionsAttribute.value);
-        console.log("Parsed config:", config);
-        console.log("Parsed selections:", selections);
-        
-        const calculatedPrice = computeTotalPrice({ config, selections });
-        const shopifyPrice = parseFloat(line.cost.amountPerQuantity.amount);
-        
-        console.log("Calculated price:", calculatedPrice);
-        console.log("Shopify price:", shopifyPrice);
-        
-        // Shopify price ile calculated price karşılaştır
-        // Eğer Shopify price daha büyükse, onu kullan
-        // Eğer calculated price daha büyükse, onu kullan
-        const finalPrice = Math.max(calculatedPrice, shopifyPrice);
-        
-        console.log("Final price (max of both):", finalPrice);
-        console.log("Price difference:", Math.abs(finalPrice - shopifyPrice));
-
-        // Update price only if it's calculated correctly and different from the current price
-        if (finalPrice > 0 && Math.abs(finalPrice - shopifyPrice) > 0.01) {
-          console.log("Creating price update operation");
-          const updateOperation = {
-            lineUpdate: {
-              cartLineId: line.id,
-              price: {
-                adjustment: {
-                  fixedPricePerUnit: {
-                    amount: finalPrice.toFixed(2),
+      console.log("Parsed config:", config);
+      console.log("Parsed selections:", selections);
+      
+      const customizerPrice = computeTotalPrice({ config, selections });
+      const originalPrice = parseFloat(line.cost.amountPerQuantity.amount) / 100; // cents to dollars
+      
+      console.log("Customizer price:", customizerPrice);
+      console.log("Original price:", originalPrice);
+      
+      if (customizerPrice > 0) {
+        const expandOperation = {
+          expand: {
+            cartLineId: line.id,
+            image: { 
+              url: line.merchandise.image?.url || "" 
+            },
+            expandedCartItems: [
+              {
+                merchandise: {
+                  productVariantId: line.merchandise.id,
+                  quantity: line.quantity
+                },
+                cost: {
+                  totalAmount: {
+                    amount: (customizerPrice * 100).toFixed(0), // dollars to cents
+                    currencyCode: line.cost.amountPerQuantity.currencyCode
                   }
-                }
+                },
+                attributes: [
+                  {
+                    key: "_Customizer-Enabled",
+                    value: "true"
+                  },
+                  {
+                    key: "_Customizer-Config",
+                    value: configAttribute.value
+                  },
+                  {
+                    key: "_Customizer-Selections", 
+                    value: selectionsAttribute.value
+                  },
+                  {
+                    key: "_Customizer-Price",
+                    value: customizerPrice.toFixed(2)
+                  },
+                  {
+                    key: "_Original-Price",
+                    value: originalPrice.toFixed(2)
+                  },
+                  {
+                    key: "_Total-Price",
+                    value: customizerPrice.toFixed(2)
+                  }
+                ]
               }
-            }
-          };
-          return updateOperation;
-        } else {
-          console.log("No price update needed - price difference too small or invalid price");
-        }
-      } catch (e) {
-        console.error("Cart Transform Error:", e.message, e.stack);
+            ]
+          }
+        };
+        
+        operations.push(expandOperation);
+        console.log("Created expand operation for line:", line.id);
       }
       
-      return null;
-    })
-    .filter(op => op !== null);
-
-  console.log("Total operations:", operations.length);
-  console.log("=== CART TRANSFORM DEBUG END ===");
-
+    } catch (e) {
+      console.error("Cart Transform Error:", e.message, e.stack);
+    }
+  });
+  
+  console.log("Total expand operations:", operations.length);
+  console.log("=== CART EXPAND DEBUG END ===");
+  
   if (operations.length === 0) {
     return NO_CHANGES;
   }
-
+  
   return { operations };
-};
+}
