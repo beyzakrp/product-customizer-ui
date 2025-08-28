@@ -148,6 +148,51 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
     return emailRegex.test(email);
   }, []);
 
+  // Draft order payload builder
+  const buildDraftPayload = useCallback(({ email, finalPrice, summary }) => {
+    // summary: { variantId?, config, selections, currency }
+    const configSummary =
+      (summary?.config || [])
+        .map(x => (typeof x === 'string' ? x : x?.label || x?.value))
+        .filter(Boolean)
+        .join(' • ') || 'Custom Configuration';
+
+    // 1) VARIANT kullanmak istersen (fiyatı varyanttan gelir):
+    if (summary?.variantId) {
+      return {
+        email,
+        lineItems: [
+          {
+            variantId: summary.variantId,
+            quantity: 1,
+            customAttributes: [
+              { key: '_config', value: JSON.stringify(summary.config || []) },
+              { key: '_selections', value: JSON.stringify(summary.selections || {}) },
+              { key: '_currency', value: summary.currency || 'USD' }
+            ]
+          }
+        ]
+      };
+    }
+
+    // 2) TAMAMEN CUSTOM satır (özel fiyatı yazmak için):
+    return {
+      email,
+      lineItems: [
+        {
+          title: configSummary,
+          originalUnitPrice: Number(finalPrice), // ÖNEMLİ: number olmalı
+          quantity: 1,
+          customAttributes: [
+            { key: '_config', value: JSON.stringify(summary?.config || []) },
+            { key: '_selections', value: JSON.stringify(summary?.selections || {}) },
+            { key: '_currency', value: summary?.currency || 'USD' }
+          ]
+        }
+      ]
+    };
+  }, []);
+
   const isFormValid = useMemo(() => {
     return hasValidSelections && customerEmail && isValidEmail(customerEmail);
   }, [hasValidSelections, customerEmail, isValidEmail]);
@@ -488,17 +533,21 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
       return;
     }
 
-    // Payload hazırla
-    const payload = {
-      email: customerEmail,
-      finalPrice: finalPrice,
-      summary: {
-        config: configForCart,
-        selections: selectionsForCart,
-        variantId: variantId,
-        currency: config.currency || 'USD'
-      }
+    // Payload hazırla - buildDraftPayload ile
+    const summary = {
+      variantId: variantId,
+      config: configForCart,
+      selections: selectionsForCart,
+      currency: config.currency || 'USD'
     };
+    
+    const payload = buildDraftPayload({ 
+      email: customerEmail, 
+      finalPrice: finalPrice, 
+      summary 
+    });
+
+    console.log('Draft Order Payload:', payload);
 
     try {
       const response = await fetch('https://customizer-draft-order-api.vercel.app/api/draft-orders', {
