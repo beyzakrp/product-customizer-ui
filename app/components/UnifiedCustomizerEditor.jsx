@@ -156,40 +156,36 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
     // Product title + customizer options + selections summary
     const productInfo = productTitle ? `${productTitle} - ` : '';
     
-    // Customizer options (config blocks) - enabled olanlar
-    const customizerOptions = (summary?.config || [])
-      .filter(block => block.enabled && block.title && block.type !== 'config')
-      .map(block => block.title)
-      .join(' • ');
-    
-    // Selections summary (what user actually selected)
-    const selectionsSummary = [];
-    if (summary?.selections) {
-      Object.entries(summary.selections).forEach(([blockId, selection]) => {
-        const block = summary.config?.find(b => b.id === blockId);
-        if (block && selection) {
-          if (block.type === 'picker' && selection.label) {
-            selectionsSummary.push(selection.label);
-          } else if (block.type === 'area' && selection.width) {
-            selectionsSummary.push(`${selection.width}cm`);
-          } else if (block.type === 'input' && selection) {
-            selectionsSummary.push(selection);
+    // Customizer options + selections (enabled blocks)
+    const customizerOptionsWithSelections = [];
+    if (summary?.config) {
+      summary.config.forEach(block => {
+        if (block.enabled && block.title && block.type !== 'config') {
+          const selection = summary.selections?.[block.id];
+          let optionText = block.title;
+          
+          // Seçim varsa ekle
+          if (selection) {
+            if (block.type === 'picker' && selection.label) {
+              optionText += `: ${selection.label}`;
+            } else if (block.type === 'area' && selection.width) {
+              optionText += `: ${selection.width}cm`;
+            } else if (block.type === 'input' && selection) {
+              optionText += `: ${selection}`;
+            }
           }
+          
+          customizerOptionsWithSelections.push(optionText);
         }
       });
     }
     
-    // Title format: "Product Title - Customizer Options (selections)"
+    // Title format: "Product Title - Option1: Selection1 • Option2: Selection2"
     let fullTitle = productTitle || 'Custom Product';
     
-    // Customizer options ekle
-    if (customizerOptions) {
-      fullTitle += ` - ${customizerOptions}`;
-    }
-    
-    // Selections ekle
-    if (selectionsSummary.length > 0) {
-      fullTitle += ` (${selectionsSummary.join(', ')})`;
+    // Customizer options + selections ekle
+    if (customizerOptionsWithSelections.length > 0) {
+      fullTitle += ` - ${customizerOptionsWithSelections.join(' • ')}`;
     }
 
     // 1) VARIANT kullanmak istersen (fiyatı varyanttan gelir):
