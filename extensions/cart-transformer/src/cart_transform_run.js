@@ -128,8 +128,7 @@ export function cartTransformRun(input) {
               attributes: [{ key: "_ct_hit", value: new Date().toISOString() }],
               expandedCartItems: [
                 {
-                  merchandiseId: line.merchandise.id,
-                  quantity: line.quantity,
+                  merchandiseId: "gid://shopify/ProductVariant/46741666857196",
                   price: { 
                     adjustment: { 
                       fixedPricePerUnit: { 

@@ -105,6 +105,7 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
   const [collapsed, setCollapsed] = useState(() => new Set());
   const [preview, setPreview] = useState({});
   const [selectedTab, setSelectedTab] = useState(0);
+  const [customerEmail, setCustomerEmail] = useState("");
 
   // Validation helpers
   const getFirstPickerBlock = useMemo(() => {
@@ -141,6 +142,10 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
     return true;
   }, [preview, getFirstPickerBlock, getAreaBlock]);
 
+  const isFormValid = useMemo(() => {
+    return hasValidSelections && customerEmail && isValidEmail(customerEmail);
+  }, [hasValidSelections, customerEmail, isValidEmail]);
+
   // Preview'da dinamik fiyat hesaplama
   const calculatePreviewPrice = useCallback((option, currentTotal) => {
     if (option.pricing?.mode === 'multiplier') {
@@ -161,6 +166,12 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
     
     // show: true veya undefined ise fiyat gösterilir
     return true;
+  }, []);
+
+  // Email validation
+  const isValidEmail = useCallback((email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
   }, []);
 
   // Mevcut toplam fiyatı hesapla
@@ -456,34 +467,62 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
     const selectionsForCart = preview;
     const variantId = "gid://shopify/ProductVariant/45499257618721"; 
 
-    const attributes = {
-      _config: JSON.stringify(configForCart),
-      _selections: JSON.stringify(selectionsForCart),
-    };
+    // Final price hesapla
+    let finalPrice = 0;
+    try {
+      const selectionsForPricing = JSON.parse(JSON.stringify(preview));
+      for (const block of blocks) {
+        if (block.type === 'area' && selectionsForPricing[block.id]) {
+          delete selectionsForPricing[block.id].height;
+        }
+      }
+      finalPrice = computeTotalPrice({ config: blocks, selections: selectionsForPricing }) || 0;
+    } catch (e) {
+      console.error("Price calculation error:", e);
+      finalPrice = 0;
+    }
 
-    const formData = {
-      'id': variantId,
-      'quantity': 1,
-      'attributes': attributes
+    // Customer email validation
+    if (!customerEmail || !isValidEmail(customerEmail)) {
+      alert('Please enter a valid email address.');
+      return;
+    }
+
+    // Payload hazırla
+    const payload = {
+      email: customerEmail,
+      finalPrice: finalPrice,
+      summary: {
+        config: configForCart,
+        selections: selectionsForCart,
+        variantId: variantId,
+        currency: config.currency || 'USD'
+      }
     };
 
     try {
-      const response = await fetch('/cart/add.js', {
+      const response = await fetch('https://customizer-draft-order-api.vercel.app/api/draft-orders', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(payload)
       });
+      
       const data = await response.json();
-      if (response.ok) {
-        alert('Product added to cart!');
+      
+      if (response.ok && data.ok) {
+        // Başarılı - invoice URL'e yönlendir
+        alert('Draft order created successfully! You are being redirected to the checkout page...');
+        window.location.href = data.invoiceUrl;
       } else {
-        alert(`Error adding product: ${data.description || 'Unknown error'}`);
+        const errorMessage = data.error || 'Unknown error';
+        alert(`Draft order creation failed: ${errorMessage}`);
+        console.error('Draft order error:', data);
       }
     } catch (error) {
-      console.error('Failed to add to cart:', error);
-      alert('Failed to add product to cart. See console for details.');
+      console.error('Failed to create draft order:', error);
+      alert('Draft order creation failed. Please try again.');
     }
   };
 
@@ -1332,13 +1371,26 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
                       </div>
                     )}
                   </div>
+                  {/* Email Input */}
+                  <div style={{ marginTop: '1rem' }}>
+                    <TextField
+                      label="Email Address"
+                      type="email"
+                      value={customerEmail}
+                      onChange={setCustomerEmail}
+                      placeholder="order@example.com"
+                      helpText="Order information will be sent to this email address"
+                      error={customerEmail && !isValidEmail(customerEmail) ? "Please enter a valid email address" : ""}
+                    />
+                  </div>
+
                   <div style={{ marginTop: '1rem' }}>
                     <Button 
                       onClick={handleAddToCart} 
                       variant="primary" 
-                      disabled={!hasValidSelections}
+                      disabled={!isFormValid}
                     >
-                      Add to Cart (Test)
+                      Sepete Ekle
                     </Button>
                   </div>
                 </BlockStack>
