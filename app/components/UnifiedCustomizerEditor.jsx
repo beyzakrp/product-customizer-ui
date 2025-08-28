@@ -153,34 +153,41 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
 
   // Draft order payload builder
   const buildDraftPayload = useCallback(({ email, finalPrice, summary, productTitle }) => {
-    // Product title + config summary + selections summary
+    // Product title + customizer options + selections summary
     const productInfo = productTitle ? `${productTitle} - ` : '';
     
-    // Config blocks summary
-    const configSummary = (summary?.config || [])
-      .filter(block => block.enabled && block.title)
+    // Customizer options (config blocks) - enabled olanlar
+    const customizerOptions = (summary?.config || [])
+      .filter(block => block.enabled && block.title && block.type !== 'config')
       .map(block => block.title)
       .join(' • ');
     
-    // Selections summary (what user actually selected) - daha temiz format
+    // Selections summary (what user actually selected)
     const selectionsSummary = [];
     if (summary?.selections) {
       Object.entries(summary.selections).forEach(([blockId, selection]) => {
         const block = summary.config?.find(b => b.id === blockId);
         if (block && selection) {
           if (block.type === 'picker' && selection.label) {
-            selectionsSummary.push(selection.label); // Sadece seçilen değer
+            selectionsSummary.push(selection.label);
           } else if (block.type === 'area' && selection.width) {
-            selectionsSummary.push(`${selection.width}cm`); // Sadece boyut
+            selectionsSummary.push(`${selection.width}cm`);
           } else if (block.type === 'input' && selection) {
-            selectionsSummary.push(selection); // Sadece input değeri
+            selectionsSummary.push(selection);
           }
         }
       });
     }
     
-    // Daha temiz title format
+    // Title format: "Product Title - Customizer Options (selections)"
     let fullTitle = productTitle || 'Custom Product';
+    
+    // Customizer options ekle
+    if (customizerOptions) {
+      fullTitle += ` - ${customizerOptions}`;
+    }
+    
+    // Selections ekle
     if (selectionsSummary.length > 0) {
       fullTitle += ` (${selectionsSummary.join(', ')})`;
     }
