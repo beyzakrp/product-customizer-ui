@@ -159,26 +159,28 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
       .map(block => block.title)
       .join(' • ');
     
-    // Selections summary (what user actually selected)
+    // Selections summary (what user actually selected) - daha temiz format
     const selectionsSummary = [];
     if (summary?.selections) {
       Object.entries(summary.selections).forEach(([blockId, selection]) => {
         const block = summary.config?.find(b => b.id === blockId);
         if (block && selection) {
           if (block.type === 'picker' && selection.label) {
-            selectionsSummary.push(`${block.title}: ${selection.label}`);
+            selectionsSummary.push(selection.label); // Sadece seçilen değer
           } else if (block.type === 'area' && selection.width) {
-            selectionsSummary.push(`${block.title}: ${selection.width}cm`);
+            selectionsSummary.push(`${selection.width}cm`); // Sadece boyut
           } else if (block.type === 'input' && selection) {
-            selectionsSummary.push(`${block.title}: ${selection}`);
+            selectionsSummary.push(selection); // Sadece input değeri
           }
         }
       });
     }
     
-    const fullTitle = selectionsSummary.length > 0 ? 
-      `${productInfo}${selectionsSummary.join(' • ')}` : 
-      `${productInfo}${configSummary || 'Custom Configuration'}`;
+    // Daha temiz title format
+    let fullTitle = productTitle || 'Custom Product';
+    if (selectionsSummary.length > 0) {
+      fullTitle += ` (${selectionsSummary.join(', ')})`;
+    }
 
     // 1) VARIANT kullanmak istersen (fiyatı varyanttan gelir):
     if (summary?.variantId) {
@@ -591,9 +593,10 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
       const data = await response.json();
       
       if (response.ok && data.ok) {
-        // Başarılı - invoice URL'e yönlendir
-        alert('Draft order created successfully! You are being redirected to the checkout page...');
-        window.location.href = data.invoiceUrl;
+        // Başarılı - sadece link'i göster, redirect yapma
+        const message = `Draft order başarıyla oluşturuldu!\n\nCheckout link'i:\n${data.invoiceUrl}\n\nBu link'i kopyalayıp yeni sekmede açabilirsiniz.`;
+        alert(message);
+        console.log('Draft Order created successfully:', data);
       } else {
         const errorMessage = data.error || 'Unknown error';
         alert(`Draft order creation failed: ${errorMessage}`);
