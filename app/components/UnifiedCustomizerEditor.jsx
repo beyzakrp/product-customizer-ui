@@ -13,6 +13,7 @@ import {
   Tabs,
   Box,
   Text,
+  Modal,
 } from "@shopify/polaris";
 
 function parseInitial(data) {
@@ -106,6 +107,8 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
   const [preview, setPreview] = useState({});
   const [selectedTab, setSelectedTab] = useState(0);
   const [customerEmail, setCustomerEmail] = useState("");
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [draftOrderUrl, setDraftOrderUrl] = useState("");
 
   // Validation helpers
   const getFirstPickerBlock = useMemo(() => {
@@ -593,9 +596,9 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
       const data = await response.json();
       
       if (response.ok && data.ok) {
-        // Başarılı - sadece link'i göster, redirect yapma
-        const message = `Draft order başarıyla oluşturuldu!\n\nCheckout link'i:\n${data.invoiceUrl}\n\nBu link'i kopyalayıp yeni sekmede açabilirsiniz.`;
-        alert(message);
+        // Başarılı - modal'ı aç
+        setDraftOrderUrl(data.invoiceUrl);
+        setShowSuccessModal(true);
         console.log('Draft Order created successfully:', data);
       } else {
         const errorMessage = data.error || 'Unknown error';
@@ -1491,6 +1494,56 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
           </Button>
         </InlineStack>
       </div>
+
+      {/* Success Modal */}
+      <Modal
+        open={showSuccessModal}
+        onClose={() => setShowSuccessModal(false)}
+        title="Draft Order Başarıyla Oluşturuldu!"
+        primaryAction={{
+          content: 'Checkout\'a Git',
+          onAction: () => {
+            window.open(draftOrderUrl, '_blank');
+            setShowSuccessModal(false);
+          },
+        }}
+        secondaryActions={[
+          {
+            content: 'Kapat',
+            onAction: () => setShowSuccessModal(false),
+          },
+        ]}
+      >
+        <Modal.Section>
+          <BlockStack gap="400">
+            <Text variant="bodyMd">
+              Draft order başarıyla oluşturuldu! Şimdi checkout sayfasına gidebilirsiniz.
+            </Text>
+            <Card>
+              <BlockStack gap="200">
+                <Text variant="headingSm">Checkout Link'i:</Text>
+                <Text variant="bodyMd" as="p">
+                  <a 
+                    href={draftOrderUrl} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    style={{ 
+                      color: '#007cba', 
+                      textDecoration: 'underline',
+                      wordBreak: 'break-all'
+                    }}
+                  >
+                    {draftOrderUrl}
+                  </a>
+                </Text>
+                <Text variant="bodyMd" as="p" color="subdued">
+                  Bu link'i kopyalayıp yeni sekmede açabilir veya "Checkout'a Git" butonuna tıklayabilirsiniz.
+                </Text>
+              </BlockStack>
+            </Card>
+          </BlockStack>
+        </Modal.Section>
+      </Modal>
     </Page>
   );
 } 
