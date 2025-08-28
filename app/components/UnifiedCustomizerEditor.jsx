@@ -99,7 +99,7 @@ function createDefaultBlock(type) {
   };
 }
 
-export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, onCancel, productId }) {
+export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, onCancel, productId, productTitle }) {
   const [blocks, setBlocks] = useState(() => parseInitial(initialValue));
   const [newBlockType, setNewBlockType] = useState("picker");
   const [collapsed, setCollapsed] = useState(() => new Set());
@@ -149,13 +149,36 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
   }, []);
 
   // Draft order payload builder
-  const buildDraftPayload = useCallback(({ email, finalPrice, summary }) => {
-    // summary: { variantId?, config, selections, currency }
-    const configSummary =
-      (summary?.config || [])
-        .map(x => (typeof x === 'string' ? x : x?.label || x?.value))
-        .filter(Boolean)
-        .join(' • ') || 'Custom Configuration';
+  const buildDraftPayload = useCallback(({ email, finalPrice, summary, productTitle }) => {
+    // Product title + config summary + selections summary
+    const productInfo = productTitle ? `${productTitle} - ` : '';
+    
+    // Config blocks summary
+    const configSummary = (summary?.config || [])
+      .filter(block => block.enabled && block.title)
+      .map(block => block.title)
+      .join(' • ');
+    
+    // Selections summary (what user actually selected)
+    const selectionsSummary = [];
+    if (summary?.selections) {
+      Object.entries(summary.selections).forEach(([blockId, selection]) => {
+        const block = summary.config?.find(b => b.id === blockId);
+        if (block && selection) {
+          if (block.type === 'picker' && selection.label) {
+            selectionsSummary.push(`${block.title}: ${selection.label}`);
+          } else if (block.type === 'area' && selection.width) {
+            selectionsSummary.push(`${block.title}: ${selection.width}cm`);
+          } else if (block.type === 'input' && selection) {
+            selectionsSummary.push(`${block.title}: ${selection}`);
+          }
+        }
+      });
+    }
+    
+    const fullTitle = selectionsSummary.length > 0 ? 
+      `${productInfo}${selectionsSummary.join(' • ')}` : 
+      `${productInfo}${configSummary || 'Custom Configuration'}`;
 
     // 1) VARIANT kullanmak istersen (fiyatı varyanttan gelir):
     if (summary?.variantId) {
@@ -166,6 +189,7 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
             variantId: summary.variantId,
             quantity: 1,
             customAttributes: [
+              { key: '_product_title', value: productTitle || 'Unknown Product' },
               { key: '_config', value: JSON.stringify(summary.config || []) },
               { key: '_selections', value: JSON.stringify(summary.selections || {}) },
               { key: '_currency', value: summary.currency || 'USD' }
@@ -180,10 +204,11 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
       email,
       lineItems: [
         {
-          title: configSummary,
+          title: fullTitle,
           originalUnitPrice: Number(finalPrice), // ÖNEMLİ: number olmalı
           quantity: 1,
           customAttributes: [
+            { key: '_product_title', value: productTitle || 'Unknown Product' },
             { key: '_config', value: JSON.stringify(summary?.config || []) },
             { key: '_selections', value: JSON.stringify(summary?.selections || {}) },
             { key: '_currency', value: summary?.currency || 'USD' }
@@ -548,7 +573,8 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
     const payload = buildDraftPayload({ 
       email: customerEmail, 
       finalPrice: finalPrice, 
-      summary 
+      summary,
+      productTitle 
     });
 
     console.log('Draft Order Payload:', payload);
