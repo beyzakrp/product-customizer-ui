@@ -240,6 +240,7 @@ export default function Products() {
             {expanded === product.id.split("/").pop() && (
               <Layout.Section>
                 <UnifiedCustomizerEditor
+                  productId={product.id.split("/").pop()}
                   initialValue={(() => {
                     const edges = product.metafields?.edges || [];
                     const optionsEdge = edges.find(({node}) => node.key === "options");

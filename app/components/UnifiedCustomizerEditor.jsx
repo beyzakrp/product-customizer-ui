@@ -99,7 +99,7 @@ function createDefaultBlock(type) {
   };
 }
 
-export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, onCancel }) {
+export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, onCancel, productId }) {
   const [blocks, setBlocks] = useState(() => parseInitial(initialValue));
   const [newBlockType, setNewBlockType] = useState("picker");
   const [collapsed, setCollapsed] = useState(() => new Set());
@@ -510,7 +510,12 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
   const handleAddToCart = async () => {
     const configForCart = blocks;
     const selectionsForCart = preview;
-    const variantId = "gid://shopify/ProductVariant/45499257618721"; 
+
+    // ProductId kontrolü
+    if (!productId) {
+      alert('Ürün bilgisi bulunamadı. Lütfen sayfayı yenileyin.');
+      return;
+    }
 
     // Final price hesapla
     let finalPrice = 0;
@@ -529,13 +534,12 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
 
     // Customer email validation
     if (!customerEmail || !isValidEmail(customerEmail)) {
-      alert('Please enter a valid email address.');
+      alert('Lütfen geçerli bir email adresi giriniz.');
       return;
     }
 
-    // Payload hazırla - buildDraftPayload ile
+    // Payload hazırla - buildDraftPayload ile (variantId olmadan custom mode)
     const summary = {
-      variantId: variantId,
       config: configForCart,
       selections: selectionsForCart,
       currency: config.currency || 'USD'
