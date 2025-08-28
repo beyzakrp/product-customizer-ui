@@ -142,6 +142,12 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
     return true;
   }, [preview, getFirstPickerBlock, getAreaBlock]);
 
+  // Email validation - isFormValid'den ÖNCE tanımlanmalı
+  const isValidEmail = useCallback((email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  }, []);
+
   const isFormValid = useMemo(() => {
     return hasValidSelections && customerEmail && isValidEmail(customerEmail);
   }, [hasValidSelections, customerEmail, isValidEmail]);
@@ -166,12 +172,6 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
     
     // show: true veya undefined ise fiyat gösterilir
     return true;
-  }, []);
-
-  // Email validation
-  const isValidEmail = useCallback((email) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
   }, []);
 
   // Mevcut toplam fiyatı hesapla
