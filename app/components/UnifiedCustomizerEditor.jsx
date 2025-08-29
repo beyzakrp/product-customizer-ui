@@ -90,6 +90,8 @@ function createDefaultBlock(type) {
         width: { min: 20, max: 120 },
       },
       pricing: { mode: "none", value: 0 },
+      isHasGuideImage: false,
+      guideImageUrl: "",
     };
   }
   return {
@@ -1289,6 +1291,28 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
                           <Banner tone="subdued">
                             <p>Width limits in centimeters. The final price is calculated by multiplying the unit price (per cm) with the customer's width input.</p>
                           </Banner>
+
+                          {/* Guide Image Checkbox + URL alanı */}
+                          <Checkbox
+                            label="Has guide image?"
+                            checked={block.isHasGuideImage ?? false}
+                            onChange={(val) =>
+                              updateBlock(idx, { 
+                                isHasGuideImage: val, 
+                                guideImageUrl: val ? "" : block.guideImageUrl 
+                              })
+                            }
+                          />
+
+                          {block.isHasGuideImage && (
+                            <div style={{ width: 400 }}>
+                              <TextField
+                                label="Guide Image URL"
+                                value={block.guideImageUrl ?? ""}
+                                onChange={(v) => updateBlock(idx, { guideImageUrl: v })}
+                              />
+                            </div>
+                          )}
                     </BlockStack>
                 )}
                       </>
