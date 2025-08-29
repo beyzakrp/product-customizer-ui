@@ -790,7 +790,13 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
                           <Checkbox
                             label="Has Guide Section"
                             checked={!!block.hasGuide}
-                            onChange={(v) => updateBlock(idx, { hasGuide: v })}
+                            onChange={(v) => updateBlock(idx, { 
+                              hasGuide: v,
+                              guide: { 
+                                ...(block.guide || {}), 
+                                enabled: v 
+                              }
+                            })}
                           />
 
                           {(block.options || []).map((opt, oIdx) => (
@@ -1272,7 +1278,13 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
                           <Checkbox
                             label="Has Guide Section"
                             checked={!!block.hasGuide}
-                            onChange={(v) => updateBlock(idx, { hasGuide: v })}
+                            onChange={(v) => updateBlock(idx, { 
+                              hasGuide: v,
+                              guide: { 
+                                ...(block.guide || {}), 
+                                enabled: v 
+                              }
+                            })}
                           />
 
                           {/* Guide Section */}
@@ -1414,7 +1426,13 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
                           <Checkbox
                             label="Has Guide Section"
                             checked={!!block.hasGuide}
-                            onChange={(v) => updateBlock(idx, { hasGuide: v })}
+                            onChange={(v) => updateBlock(idx, { 
+                              hasGuide: v,
+                              guide: { 
+                                ...(block.guide || {}), 
+                                enabled: v 
+                              }
+                            })}
                           />
 
                           {/* Guide Image Checkbox + URL alanı */}
