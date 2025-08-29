@@ -1,4 +1,4 @@
-import { useMemo, useState, useCallback } from "react";
+import { useMemo, useState, useCallback, useRef } from "react";
 import { computeTotalPrice } from "../utils/pricing";
 import {
   Card,
@@ -14,7 +14,16 @@ import {
   Box,
   Text,
   Modal,
+  Layout,
+  Scrollable,
+  Collapsible,
+  Divider,
+  Link,
+  Icon,
+  Thumbnail,
+  InlineGrid,
 } from "@shopify/polaris";
+import { NavigationMinor } from '@shopify/polaris-icons';
 
 function parseInitial(data) {
   try {
@@ -115,6 +124,12 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
   const [customerEmail, setCustomerEmail] = useState("");
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [draftOrderUrl, setDraftOrderUrl] = useState("");
+  const [search, setSearch] = useState("");
+  const [open, setOpen] = useState({});
+  
+  // Refs for scroll-to functionality
+  const editorScrollRef = useRef(null);
+  const blockRefs = useRef({});
 
   // Validation helpers
   const getFirstPickerBlock = useMemo(() => {
@@ -156,6 +171,54 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
   }, []);
+
+  // Compact preview renderer for right panel
+  const renderCompactPreview = useCallback(() => {
+    return (
+      <BlockStack gap="200">
+        {blocks.filter(b => b.type !== "config").map((block) => (
+          <div key={`cp-${block.id}`}>
+            {block.type === 'picker' && block.enabled && (
+              <Select
+                label={block.title || block.id}
+                options={[{ label: 'Select', value: '' }, ...(block.options || []).map(o => ({ label: o.label, value: o.value }))]}
+                value={preview[block.id] ?? ''}
+                onChange={(v) => setPreview(p => ({ ...p, [block.id]: v }))}
+              />
+            )}
+            {block.type === 'input' && block.enabled && (
+              (block.subtype || 'text') === 'text' ? (
+                <TextField 
+                  label={block.title || block.id}
+                  value={String(preview[block.id] ?? '')}
+                  onChange={(v) => setPreview(p => ({ ...p, [block.id]: v }))} 
+                />
+              ) : (
+                <TextField 
+                  label={block.title || block.id} 
+                  type="number" 
+                  step="any"
+                  value={String(preview[block.id] ?? 0)}
+                  onChange={(v) => setPreview(p => ({ ...p, [block.id]: v }))}
+                />
+              )
+            )}
+            {block.type === 'area' && block.enabled && (
+              <TextField
+                label={`${block.title || block.id} - Width (inches)`}
+                type="number" 
+                step="0.1"
+                min={block.limits?.width?.min || 0}
+                max={block.limits?.width?.max || 1000}
+                value={String(preview[block.id]?.width ?? '')}
+                onChange={(v) => setPreview(p => ({ ...p, [block.id]: { ...(p[block.id] || {}), width: v } }))}
+              />
+            )}
+          </div>
+        ))}
+      </BlockStack>
+    );
+  }, [blocks, preview]);
 
   // Draft order payload builder
   const buildDraftPayload = useCallback(({ email, finalPrice, summary, productTitle }) => {
@@ -626,6 +689,19 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
         <div style={{ paddingTop: '1.6rem' }}>
           {selectedTab === 0 ? (
             <BlockStack gap="400">
+              {/* Search Bar */}
+              <Card sectioned>
+                <InlineStack align="space-between">
+                  <TextField
+                    label="Search blocks"
+                    labelHidden
+                    placeholder="Search by title or id…"
+                    value={search}
+                    onChange={setSearch}
+                  />
+                </InlineStack>
+              </Card>
+              
               <Banner tone="info">
                 3 types are supported: Picker, Input (text/number), Area. Multiplier only applies to base price.
               </Banner>
@@ -698,8 +774,13 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
               </Card>
 
               {/* Blocks List */}
-              {blocks.map((block, idx) => (
-                block.type === "config" ? null : (
+              {blocks.filter(block => 
+                block.type !== "config" && 
+                (!search || 
+                  (block.title || '').toLowerCase().includes(search.toLowerCase()) || 
+                  (block.id || '').toLowerCase().includes(search.toLowerCase())
+                )
+                ).map((block, idx) => (
                   <Card key={block.id || idx} title={`${block.title || block.type} (${block.type})`} sectioned>
                     <BlockStack gap="300">
                       <InlineStack align="space-between">
@@ -1595,7 +1676,7 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
                     </BlockStack>
                   </Card>
                 )
-              ))}
+              )}
             </BlockStack>
           ) : (
             <div style={{ paddingTop: '1.6rem' }}>
