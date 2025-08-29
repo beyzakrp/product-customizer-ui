@@ -90,6 +90,7 @@ function createDefaultBlock(type) {
         width: { min: 20, max: 120 },
       },
       pricing: { mode: "none", value: 0 },
+      hasGuide: false,
       isHasGuideImage: false,
       guideImageUrl: "",
     };
@@ -1291,6 +1292,13 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
                           <Banner tone="subdued">
                             <p>Width limits in centimeters. The final price is calculated by multiplying the unit price (per cm) with the customer's width input.</p>
                           </Banner>
+
+                          {/* Has Guide Section Checkbox */}
+                          <Checkbox
+                            label="Has Guide Section"
+                            checked={!!block.hasGuide}
+                            onChange={(v) => updateBlock(idx, { hasGuide: v })}
+                          />
 
                           {/* Guide Image Checkbox + URL alanı */}
                           <Checkbox
