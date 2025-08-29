@@ -1109,7 +1109,15 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
                               <BlockStack gap="400">
                                 <InlineStack align="space-between">
                                   <Text variant="headingMd" as="h3">Guide Section</Text>
-                                  <Button variant="tertiary" onClick={() => addGuideSection(idx)}>Add Guide Section</Button>
+                                  {!block.guide?.enabled && (
+                                    <Button variant="tertiary" onClick={() => updateBlock(idx, { 
+                                      guide: { 
+                                        ...(block.guide || {}), 
+                                        enabled: true,
+                                        sections: [{ title: "", description: "", photoGallery: [] }]
+                                      } 
+                                    })}>Add Guide Section</Button>
+                                  )}
                                 </InlineStack>
                                 <Banner tone="info" onDismiss={() => {}}>
                                   Guide sections provide measurement guidelines and helpful information for customers.
@@ -1293,7 +1301,15 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
                               <BlockStack gap="400">
                                 <InlineStack align="space-between">
                                   <Text variant="headingMd" as="h3">Guide Section</Text>
-                                  <Button variant="tertiary" onClick={() => addGuideSection(idx)}>Add Guide Section</Button>
+                                  {!block.guide?.enabled && (
+                                    <Button variant="tertiary" onClick={() => updateBlock(idx, { 
+                                      guide: { 
+                                        ...(block.guide || {}), 
+                                        enabled: true,
+                                        sections: [{ title: "", description: "", photoGallery: [] }]
+                                      } 
+                                    })}>Add Guide Section</Button>
+                                  )}
                                 </InlineStack>
                                 <Banner tone="info" onDismiss={() => {}}>
                                   Guide sections provide helpful information and instructions for customers.
@@ -1463,7 +1479,15 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
                               <BlockStack gap="400">
                                 <InlineStack align="space-between">
                                   <Text variant="headingMd" as="h3">Guide Section</Text>
-                                  <Button variant="tertiary" onClick={() => addGuideSection(idx)}>Add Guide Section</Button>
+                                  {!block.guide?.enabled && (
+                                    <Button variant="tertiary" onClick={() => updateBlock(idx, { 
+                                      guide: { 
+                                        ...(block.guide || {}), 
+                                        enabled: true,
+                                        sections: [{ title: "", description: "", photoGallery: [] }]
+                                      } 
+                                    })}>Add Guide Section</Button>
+                                  )}
                                 </InlineStack>
                                 <Banner tone="info" onDismiss={() => {}}>
                                   Guide sections provide measurement guidelines and helpful information for customers.
