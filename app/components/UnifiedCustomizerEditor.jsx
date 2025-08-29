@@ -1474,7 +1474,7 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
                           )}
 
                           {/* Guide Section */}
-                          {block.hasGuide && (
+                           {block.hasGuide && (
                             <Box paddingBlockStart="400" borderBlockStart="divider" marginBlockStart="400">
                               <BlockStack gap="400">
                                 <InlineStack align="space-between">
@@ -1576,11 +1576,12 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
                                                 </BlockStack>
                                               </Card>
                                             ))}
-                                            
                                             <Button variant="tertiary" onClick={() => addGuidePhoto(idx, sIdx)}>Add Photo</Button>
                                           </BlockStack>
                                         </Box>
                                       ))}
+                                      
+                                      <Button variant="tertiary" onClick={() => addGuideSectionItem(idx)}>Add New Section</Button>
                                     </BlockStack>
                                   </Card>
                                 )}
