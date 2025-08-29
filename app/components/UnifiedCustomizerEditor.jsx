@@ -1312,7 +1312,7 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
                                   )}
                                 </InlineStack>
                                 <Banner tone="info" onDismiss={() => {}}>
-                                  Guide sections provide helpful information and instructions for customers.
+                                  Guide sections provide measurement guidelines and helpful information for customers.
                                 </Banner>
                                 
                                 {block.guide?.enabled && (
@@ -1357,7 +1357,7 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
                                                 <BlockStack gap="200">
                                                   <InlineStack align="space-between">
                                                     <Text variant="bodyMd" as="p">Photo {pIdx + 1}</Text>
-                                                    <Button tone="critical" variant="tertiary" onClick={() => removeGuideSection(idx, sIdx, pIdx)}>Remove Photo</Button>
+                                                    <Button tone="critical" variant="tertiary" onClick={() => removeGuidePhoto(idx, sIdx, pIdx)}>Remove Photo</Button>
                                                   </InlineStack>
                                                   
                                                   <TextField
@@ -1398,11 +1398,11 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
                                                 </BlockStack>
                                               </Card>
                                             ))}
-                                            
                                             <Button variant="tertiary" onClick={() => addGuidePhoto(idx, sIdx)}>Add Photo</Button>
                                           </BlockStack>
                                         </Box>
                                       ))}
+                                      <Button variant="tertiary" onClick={() => addGuideSectionItem(idx)}>Add New Section</Button>
                                     </BlockStack>
                                   </Card>
                                 )}
