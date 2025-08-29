@@ -269,22 +269,22 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
 
   const getValidationMessage = useMemo(() => {
     if (getFirstPickerBlock && !preview[getFirstPickerBlock.id]) {
-      return `Lütfen önce "${getFirstPickerBlock.title || getFirstPickerBlock.id}" seçimini yapınız.`;
+      return `Please select "${getFirstPickerBlock.title || getFirstPickerBlock.id}" first.`;
     }
     
     if (getAreaBlock) {
       const areaSelection = preview[getAreaBlock.id];
       if (!areaSelection || !areaSelection.width || parseFloat(areaSelection.width) <= 0) {
-        return `Lütfen "${getAreaBlock.title || getAreaBlock.id}" için genişlik değeri giriniz.`;
+        return `Please enter the width value for "${getAreaBlock.title || getAreaBlock.id}".`;
       }
       
       // Check width limits
       const width = parseFloat(areaSelection.width);
       if (getAreaBlock.limits?.width?.min && width < getAreaBlock.limits.width.min) {
-        return `"${getAreaBlock.title || getAreaBlock.id}" için minimum genişlik ${getAreaBlock.limits.width.min} cm olmalıdır.`;
+        return `"${getAreaBlock.title || getAreaBlock.id}" for minimum width ${getAreaBlock.limits.width.min} inches.`;
       }
       if (getAreaBlock.limits?.width?.max && width > getAreaBlock.limits.width.max) {
-        return `"${getAreaBlock.title || getAreaBlock.id}" için maksimum genişlik ${getAreaBlock.limits.width.max} cm olmalıdır.`;
+        return `"${getAreaBlock.title || getAreaBlock.id}" for maximum width ${getAreaBlock.limits.width.max} inches.`;
       }
     }
     
@@ -1269,7 +1269,7 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
                       <InlineStack>
                             <div style={{ width: 220, marginRight: 8 }}>
                         <TextField
-                          label="Min Width (cm)"
+                          label="Min Width (inches)"
                           type="number"
                           step="0.1"
                                 value={String(block.limits?.width?.min ?? 0)}
@@ -1278,7 +1278,7 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
                             </div>
                             <div style={{ width: 220 }}>
                         <TextField
-                          label="Max Width (cm)"
+                          label="Max Width (inches)"
                           type="number"
                           step="0.1"
                                 value={String(block.limits?.width?.max ?? 0)}
@@ -1362,7 +1362,7 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
                         <InlineStack>
                           <div style={{ width: 220, marginRight: 8 }}>
                             <TextField
-                              label={`${block.title || block.id} - Width (cm)`}
+                              label={`${block.title || block.id} - Width (inches)`}
                               type="number"
                               step="0.1"
                               min={block.limits?.width?.min || 0}
@@ -1372,10 +1372,10 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
                               error={(() => {
                                 const width = parseFloat(preview[block.id]?.width);
                                 if (width && block.limits?.width?.min && width < block.limits.width.min) {
-                                  return `Minimum genişlik ${block.limits.width.min} cm olmalıdır`;
+                                  return `Minimum width should be ${block.limits.width.min} inches`;
                                 }
                                 if (width && block.limits?.width?.max && width > block.limits.width.max) {
-                                  return `Maksimum genişlik ${block.limits.width.max} cm olmalıdır`;
+                                  return `Maximum width should be ${block.limits.width.max} inches`;
                                 }
                                 return '';
                               })()}
@@ -1455,7 +1455,7 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
                       </div>
                     ) : (
                       <div style={{ fontSize: 16, color: '#666', fontStyle: 'italic' }}>
-                        Fiyat hesaplanabilmesi için gerekli seçimleri yapınız
+                        Please make the required selections to calculate the price
                       </div>
                     )}
                   </div>
@@ -1478,7 +1478,7 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
                       variant="primary" 
                       disabled={!isFormValid}
                     >
-                      Sepete Ekle
+                      Add to Cart
                     </Button>
                   </div>
                 </BlockStack>
@@ -1502,9 +1502,9 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
       <Modal
         open={showSuccessModal}
         onClose={() => setShowSuccessModal(false)}
-        title="Draft Order Başarıyla Oluşturuldu!"
+        title="Draft Order Successfully Created!"
         primaryAction={{
-          content: 'Checkout\'a Git',
+          content: 'Checkout',
           onAction: () => {
             window.open(draftOrderUrl, '_blank');
             setShowSuccessModal(false);
@@ -1512,7 +1512,7 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
         }}
         secondaryActions={[
           {
-            content: 'Kapat',
+            content: 'Close',
             onAction: () => setShowSuccessModal(false),
           },
         ]}
@@ -1520,7 +1520,7 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
         <Modal.Section>
           <BlockStack gap="400">
             <Text variant="bodyMd">
-              Draft order başarıyla oluşturuldu! Şimdi checkout sayfasına gidebilirsiniz.
+              Draft order successfully created! You can now checkout.
             </Text>
             <Card>
               <BlockStack gap="200">
@@ -1540,7 +1540,7 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
                   </a>
                 </Text>
                 <Text variant="bodyMd" as="p" color="subdued">
-                  Bu link'i kopyalayıp yeni sekmede açabilir veya "Checkout'a Git" butonuna tıklayabilirsiniz.
+                  You can copy this link and open it in a new tab or click the "Checkout" button.
                 </Text>
               </BlockStack>
             </Card>
