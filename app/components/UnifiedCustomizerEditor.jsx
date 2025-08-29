@@ -77,6 +77,8 @@ function createDefaultBlock(type) {
       placeholder: "",
       validation: {},
       pricing: { mode: "none", value: 0 },
+      hasGuide: false,
+      guide: { enabled: false, title: "", sections: [] },
     };
   }
   if (type === "area") {
@@ -91,6 +93,7 @@ function createDefaultBlock(type) {
       },
       pricing: { mode: "none", value: 0 },
       hasGuide: false,
+      guide: { enabled: false, title: "", sections: [] },
       isHasGuideImage: false,
       guideImageUrl: "",
     };
@@ -1264,6 +1267,120 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
                               </div>
                             </InlineStack>
                           )}
+
+                          {/* Has Guide Section Checkbox */}
+                          <Checkbox
+                            label="Has Guide Section"
+                            checked={!!block.hasGuide}
+                            onChange={(v) => updateBlock(idx, { hasGuide: v })}
+                          />
+
+                          {/* Guide Section */}
+                          {block.hasGuide && (
+                            <Box paddingBlockStart="400" borderBlockStart="divider" marginBlockStart="400">
+                              <BlockStack gap="400">
+                                <InlineStack align="space-between">
+                                  <Text variant="headingMd" as="h3">Guide Section</Text>
+                                  <Button variant="tertiary" onClick={() => addGuideSection(idx)}>Add Guide Section</Button>
+                                </InlineStack>
+                                <Banner tone="info" onDismiss={() => {}}>
+                                  Guide sections provide helpful information and instructions for customers.
+                                </Banner>
+                                
+                                {block.guide?.enabled && (
+                                  <Card sectioned>
+                                    <BlockStack gap="300">
+                                      <TextField
+                                        label="Guide Title"
+                                        value={block.guide?.title || ""}
+                                        onChange={(v) => updateBlock(idx, { 
+                                          guide: { 
+                                            ...(block.guide || {}), 
+                                            title: v,
+                                            enabled: true 
+                                          } 
+                                        })}
+                                      />
+                                      
+                                      {(block.guide?.sections || []).map((section, sIdx) => (
+                                        <Box key={sIdx} background="bg-surface-secondary" padding="300" borderRadius="200">
+                                          <BlockStack gap="300">
+                                            <InlineStack align="space-between">
+                                              <Text variant="headingSm" as="h4">Section {sIdx + 1}</Text>
+                                              <Button tone="critical" variant="tertiary" onClick={() => removeGuideSection(idx, sIdx)}>Remove Section</Button>
+                                            </InlineStack>
+                                            
+                                            <TextField
+                                              label="Section Title"
+                                              value={section.title || ""}
+                                              onChange={(v) => updateGuideSection(idx, sIdx, { title: v })}
+                                            />
+                                            
+                                            <TextField
+                                              label="Description"
+                                              multiline={4}
+                                              value={section.description || ""}
+                                              onChange={(v) => updateGuideSection(idx, sIdx, { description: v })}
+                                            />
+                                            
+                                            <Text variant="headingSm" as="h5">Photo Gallery</Text>
+                                            {(section.photoGallery || []).map((photo, pIdx) => (
+                                              <Card key={pIdx} sectioned>
+                                                <BlockStack gap="200">
+                                                  <InlineStack align="space-between">
+                                                    <Text variant="bodyMd" as="p">Photo {pIdx + 1}</Text>
+                                                    <Button tone="critical" variant="tertiary" onClick={() => removeGuideSection(idx, sIdx, pIdx)}>Remove Photo</Button>
+                                                  </InlineStack>
+                                                  
+                                                  <TextField
+                                                    label="Image URL"
+                                                    value={photo.url || ""}
+                                                    onChange={(v) => updateGuidePhoto(idx, sIdx, pIdx, { url: v })}
+                                                  />
+                                                  
+                                                  <TextField
+                                                    label="Alt Text"
+                                                    value={photo.alt || ""}
+                                                    onChange={(v) => updateGuidePhoto(idx, sIdx, pIdx, { alt: v })}
+                                                  />
+                                                  
+                                                  <TextField
+                                                    label="Caption"
+                                                    value={photo.caption || ""}
+                                                    onChange={(v) => updateGuidePhoto(idx, sIdx, pIdx, { caption: v })}
+                                                  />
+                                                  
+                                                  {photo.url && (
+                                                    <div style={{ marginTop: 8 }}>
+                                                      <Text variant="bodySm" as="p" color="subdued">Preview:</Text>
+                                                      <img
+                                                        src={photo.url}
+                                                        alt={photo.alt || "Preview"}
+                                                        style={{ 
+                                                          width: 150, 
+                                                          height: 100, 
+                                                          objectFit: 'cover', 
+                                                          borderRadius: 4, 
+                                                          border: '1px solid #ddd',
+                                                          marginTop: 4
+                                                        }}
+                                                      />
+                                                    </div>
+                                                  )}
+                                                </BlockStack>
+                                              </Card>
+                                            ))}
+                                            
+                                            <Button variant="tertiary" onClick={() => addGuidePhoto(idx, sIdx)}>Add Photo</Button>
+                                          </BlockStack>
+                                        </Box>
+                                      ))}
+                                    </BlockStack>
+                                  </Card>
+                                )}
+                              </BlockStack>
+                            </Box>
+                          )}
                         </BlockStack>
                       )}
                     
@@ -1320,6 +1437,113 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
                                 onChange={(v) => updateBlock(idx, { guideImageUrl: v })}
                               />
                             </div>
+                          )}
+
+                          {/* Guide Section */}
+                          {block.hasGuide && (
+                            <Box paddingBlockStart="400" borderBlockStart="divider" marginBlockStart="400">
+                              <BlockStack gap="400">
+                                <InlineStack align="space-between">
+                                  <Text variant="headingMd" as="h3">Guide Section</Text>
+                                  <Button variant="tertiary" onClick={() => addGuideSection(idx)}>Add Guide Section</Button>
+                                </InlineStack>
+                                <Banner tone="info" onDismiss={() => {}}>
+                                  Guide sections provide measurement guidelines and helpful information for customers.
+                                </Banner>
+                                
+                                {block.guide?.enabled && (
+                                  <Card sectioned>
+                                    <BlockStack gap="300">
+                                      <TextField
+                                        label="Guide Title"
+                                        value={block.guide?.title || ""}
+                                        onChange={(v) => updateBlock(idx, { 
+                                          guide: { 
+                                            ...(block.guide || {}), 
+                                            title: v,
+                                            enabled: true 
+                                          } 
+                                        })}
+                                      />
+                                      
+                                      {(block.guide?.sections || []).map((section, sIdx) => (
+                                        <Box key={sIdx} background="bg-surface-secondary" padding="300" borderRadius="200">
+                                          <BlockStack gap="300">
+                                            <InlineStack align="space-between">
+                                              <Text variant="headingSm" as="h4">Section {sIdx + 1}</Text>
+                                              <Button tone="critical" variant="tertiary" onClick={() => removeGuideSection(idx, sIdx)}>Remove Section</Button>
+                                            </InlineStack>
+                                            
+                                            <TextField
+                                              label="Section Title"
+                                              value={section.title || ""}
+                                              onChange={(v) => updateGuideSection(idx, sIdx, { title: v })}
+                                            />
+                                            
+                                            <TextField
+                                              label="Description"
+                                              multiline={4}
+                                              value={section.description || ""}
+                                              onChange={(v) => updateGuideSection(idx, sIdx, { description: v })}
+                                            />
+                                            
+                                            <Text variant="headingSm" as="h5">Photo Gallery</Text>
+                                            {(section.photoGallery || []).map((photo, pIdx) => (
+                                              <Card key={pIdx} sectioned>
+                                                <BlockStack gap="200">
+                                                  <InlineStack align="space-between">
+                                                    <Text variant="bodyMd" as="p">Photo {pIdx + 1}</Text>
+                                                    <Button tone="critical" variant="tertiary" onClick={() => removeGuidePhoto(idx, sIdx, pIdx)}>Remove Photo</Button>
+                                                  </InlineStack>
+                                                  
+                                                  <TextField
+                                                    label="Image URL"
+                                                    value={photo.url || ""}
+                                                    onChange={(v) => updateGuidePhoto(idx, sIdx, pIdx, { url: v })}
+                                                  />
+                                                  
+                                                  <TextField
+                                                    label="Alt Text"
+                                                    value={photo.alt || ""}
+                                                    onChange={(v) => updateGuidePhoto(idx, sIdx, pIdx, { alt: v })}
+                                                  />
+                                                  
+                                                  <TextField
+                                                    label="Caption"
+                                                    value={photo.caption || ""}
+                                                    onChange={(v) => updateGuidePhoto(idx, sIdx, pIdx, { caption: v })}
+                                                  />
+                                                  
+                                                  {photo.url && (
+                                                    <div style={{ marginTop: 8 }}>
+                                                      <Text variant="bodySm" as="p" color="subdued">Preview:</Text>
+                                                      <img
+                                                        src={photo.url}
+                                                        alt={photo.alt || "Preview"}
+                                                        style={{ 
+                                                          width: 150, 
+                                                          height: 100, 
+                                                          objectFit: 'cover', 
+                                                          borderRadius: 4, 
+                                                          border: '1px solid #ddd',
+                                                          marginTop: 4
+                                                        }}
+                                                      />
+                                                    </div>
+                                                  )}
+                                                </BlockStack>
+                                              </Card>
+                                            ))}
+                                            
+                                            <Button variant="tertiary" onClick={() => addGuidePhoto(idx, sIdx)}>Add Photo</Button>
+                                          </BlockStack>
+                                        </Box>
+                                      ))}
+                                    </BlockStack>
+                                  </Card>
+                                )}
+                              </BlockStack>
+                            </Box>
                           )}
                     </BlockStack>
                 )}
