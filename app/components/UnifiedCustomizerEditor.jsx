@@ -774,13 +774,17 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
               </Card>
 
               {/* Blocks List */}
-              {blocks.filter(block => 
-                block.type !== "config" && 
-                (!search || 
-                  (block.title || '').toLowerCase().includes(search.toLowerCase()) || 
-                  (block.id || '').toLowerCase().includes(search.toLowerCase())
-                )
-                ).map((block, idx) => (
+              {blocks.map((block, idx) => {
+                const visible =
+                  block.type !== "config" &&
+                  (!search ||
+                    (block.title || '').toLowerCase().includes(search.toLowerCase()) ||
+                    (block.id || '').toLowerCase().includes(search.toLowerCase())
+                  );
+
+                if (!visible) return null;
+
+                return (
                   <Card key={block.id || idx} title={`${block.title || block.type} (${block.type})`} sectioned>
                     <BlockStack gap="300">
                       <InlineStack align="space-between">
@@ -1675,8 +1679,8 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
                       )}
                     </BlockStack>
                   </Card>
-                )
-              )}
+                );
+              })}
             </BlockStack>
           ) : (
             <div style={{ paddingTop: '1.6rem' }}>
