@@ -98,13 +98,18 @@ function createDefaultBlock(type) {
       enabled: true,
       unit: "inch",
       limits: {
-        width: { min: 20, max: 120 },
+        width: { min: 20 },
       },
       pricing: { mode: "none", value: 0 },
       hasGuide: false,
       guide: { enabled: false, title: "", sections: [] },
       isHasGuideImage: false,
       guideImageUrl: "",
+      hasInputSection: false,
+      inputSection: {
+        title: "",
+        placeholder: ""
+      }
     };
   }
   return {
@@ -156,9 +161,6 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
       // Check width limits
       const width = parseFloat(areaSelection.width);
       if (getAreaBlock.limits?.width?.min && width < getAreaBlock.limits.width.min) {
-        return false;
-      }
-      if (getAreaBlock.limits?.width?.max && width > getAreaBlock.limits.width.max) {
         return false;
       }
     }
@@ -351,9 +353,6 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
       const width = parseFloat(areaSelection.width);
       if (getAreaBlock.limits?.width?.min && width < getAreaBlock.limits.width.min) {
         return `"${getAreaBlock.title || getAreaBlock.id}" for minimum width ${getAreaBlock.limits.width.min} inches.`;
-      }
-      if (getAreaBlock.limits?.width?.max && width > getAreaBlock.limits.width.max) {
-        return `"${getAreaBlock.title || getAreaBlock.id}" for maximum width ${getAreaBlock.limits.width.max} inches.`;
       }
     }
     
@@ -1499,7 +1498,6 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
                     
                       {block.type === "area" && (
                         <BlockStack gap="300">
-                      <InlineStack>
                             <div style={{ width: 220, marginRight: 8 }}>
                         <TextField
                           label="Min Width (inches)"
@@ -1509,18 +1507,8 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
                                 onChange={(v) => updateBlock(idx, { limits: { ...(block.limits || {}), width: { ...(block.limits?.width || {}), min: parseFloat(v) } } })}
                         />
                             </div>
-                            <div style={{ width: 220 }}>
-                        <TextField
-                          label="Max Width (inches)"
-                          type="number"
-                          step="0.1"
-                                value={String(block.limits?.width?.max ?? 0)}
-                                onChange={(v) => updateBlock(idx, { limits: { ...(block.limits || {}), width: { ...(block.limits?.width || {}), max: parseFloat(v) } } })}
-                        />
-                            </div>
-                      </InlineStack>
                           <Banner tone="subdued">
-                            <p>Width limits in inches. The final price is calculated by multiplying the unit price (per inch) with the customer's width input.</p>
+                            <p>Minimum width limit in inches. The final price is calculated by multiplying the unit price (per inch) with the customer's width input.</p>
                           </Banner>
 
                           {/* Has Guide Section Checkbox */}
@@ -1673,6 +1661,56 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
                               </BlockStack>
                             </Box>
                           )}
+
+                          {/* Input Section Checkbox */}
+                          <Checkbox
+                            label="Has Input Section"
+                            checked={!!block.hasInputSection}
+                            onChange={(v) => updateBlock(idx, { 
+                              hasInputSection: v,
+                              inputSection: v ? { 
+                                title: "", 
+                                placeholder: "" 
+                              } : undefined
+                            })}
+                          />
+
+                          {/* Input Section Fields */}
+                          {block.hasInputSection && (
+                            <Box paddingBlockStart="400" borderBlockStart="divider" marginBlockStart="400">
+                              <BlockStack gap="300">
+                                <Text variant="headingMd" as="h3">Input Section</Text>
+                                
+                                <div style={{ width: 400 }}>
+                                  <TextField
+                                    label="Input Title"
+                                    value={block.inputSection?.title ?? ""}
+                                    onChange={(v) => updateBlock(idx, { 
+                                      inputSection: { 
+                                        ...(block.inputSection || {}), 
+                                        title: v 
+                                      } 
+                                    })}
+                                    placeholder="Enter input title"
+                                  />
+                                </div>
+
+                                <div style={{ width: 400 }}>
+                                  <TextField
+                                    label="Input Placeholder"
+                                    value={block.inputSection?.placeholder ?? ""}
+                                    onChange={(v) => updateBlock(idx, { 
+                                      inputSection: { 
+                                        ...(block.inputSection || {}), 
+                                        placeholder: v 
+                                      } 
+                                    })}
+                                    placeholder="Enter placeholder text"
+                                  />
+                                </div>
+                              </BlockStack>
+                            </Box>
+                          )}
                     </BlockStack>
                 )}
                       </>
@@ -1743,29 +1781,39 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
                       )}
 
                       {block.type === 'area' && block.enabled && (
-                        <InlineStack>
-                          <div style={{ width: 220, marginRight: 8 }}>
-                            <TextField
-                              label={`${block.title || block.id} - Width (inches)`}
-                              type="number"
-                              step="0.1"
-                              min={block.limits?.width?.min || 0}
-                              max={block.limits?.width?.max || 1000}
-                              value={String(preview[block.id]?.width ?? '')}
-                              onChange={(v)=> setPreview((p)=> ({ ...p, [block.id]: { ...(p[block.id]||{}), width: v } }))}
-                              error={(() => {
-                                const width = parseFloat(preview[block.id]?.width);
-                                if (width && block.limits?.width?.min && width < block.limits.width.min) {
-                                  return `Minimum width should be ${block.limits.width.min} inches`;
-                                }
-                                if (width && block.limits?.width?.max && width > block.limits.width.max) {
-                                  return `Maximum width should be ${block.limits.width.max} inches`;
-                                }
-                                return '';
-                              })()}
-                            />
-                          </div>
-                        </InlineStack>
+                        <BlockStack gap="300">
+                          <InlineStack>
+                            <div style={{ width: 220, marginRight: 8 }}>
+                              <TextField
+                                label={`${block.title || block.id} - Width (inches)`}
+                                type="number"
+                                step="0.1"
+                                min={block.limits?.width?.min || 0}
+                                value={String(preview[block.id]?.width ?? '')}
+                                onChange={(v)=> setPreview((p)=> ({ ...p, [block.id]: { ...(p[block.id]||{}), width: v } }))}
+                                error={(() => {
+                                  const width = parseFloat(preview[block.id]?.width);
+                                  if (width && block.limits?.width?.min && width < block.limits.width.min) {
+                                    return `Minimum width should be ${block.limits.width.min} inches`;
+                                  }
+                                  return '';
+                                })()}
+                              />
+                            </div>
+                          </InlineStack>
+                          
+                          {/* Input Section Preview */}
+                          {block.hasInputSection && block.inputSection && (
+                            <div style={{ width: 220 }}>
+                              <TextField
+                                label={block.inputSection.title || "Additional Input"}
+                                placeholder={block.inputSection.placeholder || "Enter value"}
+                                value={String(preview[block.id]?.inputValue ?? '')}
+                                onChange={(v)=> setPreview((p)=> ({ ...p, [block.id]: { ...(p[block.id]||{}), inputValue: v } }))}
+                              />
+                            </div>
+                          )}
+                        </BlockStack>
                       )}
 
                       {/* Nested preview */}

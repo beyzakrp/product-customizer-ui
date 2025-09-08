@@ -263,8 +263,7 @@
     "unit": "inch",
     "limits": {
       "width": {
-        "min": 52.8,
-        "max": 304.8
+        "min": 52.8
       },
       "height": {
         "min": 50.8,
