@@ -96,7 +96,7 @@ function createDefaultBlock(type) {
       type: "area",
       title: "Area",
       enabled: true,
-      unit: "cm",
+      unit: "inch",
       limits: {
         width: { min: 20, max: 120 },
       },
@@ -238,7 +238,7 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
             if (block.type === 'picker' && selection.label) {
               optionText += `: ${selection.label}`;
             } else if (block.type === 'area' && selection.width) {
-              optionText += `: ${selection.width}cm`;
+              optionText += `: ${selection.width}in`;
             } else if (block.type === 'input' && selection) {
               optionText += `: ${selection}`;
             }
@@ -740,7 +740,7 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
                     </div>
                     <div style={{ flex: 1 }}>
                       <TextField
-                        label="Unit price (per cm)"
+                        label="Unit price (per inch)"
                         type="number"
                         step="0.01"
                         value={String(config.unit_price ?? 0)}
@@ -856,7 +856,7 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
                                 </div>
                               </InlineStack>
                               <div style={{ fontSize: 12, color: '#666', marginTop: 6 }}>
-                                Added is a fixed extra charge, Multiplier applies a multiplier to unit price (per cm).
+                                Added is a fixed extra charge, Multiplier applies a multiplier to unit price (per inch).
                               </div>
                             </>
                           )}
@@ -1520,7 +1520,7 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
                             </div>
                       </InlineStack>
                           <Banner tone="subdued">
-                            <p>Width limits in centimeters. The final price is calculated by multiplying the unit price (per cm) with the customer's width input.</p>
+                            <p>Width limits in inches. The final price is calculated by multiplying the unit price (per inch) with the customer's width input.</p>
                           </Banner>
 
                           {/* Has Guide Section Checkbox */}

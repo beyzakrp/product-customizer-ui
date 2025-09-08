@@ -260,7 +260,7 @@
     "type": "area",
     "title": "Size",
     "enabled": true,
-    "unit": "cm",
+    "unit": "inch",
     "limits": {
       "width": {
         "min": 52.8,

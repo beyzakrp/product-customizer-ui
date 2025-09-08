@@ -1,6 +1,6 @@
 /**
  * Generic fiyat hesaplama yardımcıları
- * Unit price (per cm) ile width çarpılarak hesaplanır
+ * Unit price (per inch) ile width çarpılarak hesaplanır
  */
 
 function toNumber(val, fallback = 0) {
