@@ -136,6 +136,15 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
   const editorScrollRef = useRef(null);
   const blockRefs = useRef({});
 
+  const scrollToBlock = useCallback((id) => {
+    try {
+      const element = blockRefs.current?.[id];
+      if (element && typeof element.scrollIntoView === 'function') {
+        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    } catch {}
+  }, []);
+
   // Validation helpers
   const getFirstPickerBlock = useMemo(() => {
     return blocks.find(b => b.type === 'picker' && b.enabled);
@@ -429,6 +438,18 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
     setCollapsed(next);
   };
 
+  const collapseAll = () => {
+    const next = new Set();
+    for (const b of blocks) {
+      if (b.type !== 'config') next.add(b.id || String(b.title || b.type));
+    }
+    setCollapsed(next);
+  };
+
+  const expandAll = () => {
+    setCollapsed(new Set());
+  };
+
   const moveBlock = (fromIdx, toIdx) => {
     if (fromIdx === configIdx || toIdx === configIdx) return; // config taşınamaz
     if (toIdx < 0 || toIdx >= blocks.length) return;
@@ -688,6 +709,21 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
         <div style={{ paddingTop: '1.6rem' }}>
           {selectedTab === 0 ? (
             <BlockStack gap="400">
+              {/* Quick Navigation */}
+              <Card sectioned>
+                <InlineStack align="space-between" blockAlign="center">
+                  <Text variant="headingSm">Quick navigation</Text>
+                  <InlineStack gap="100">
+                    <Button size="slim" variant="tertiary" onClick={expandAll}>Expand all</Button>
+                    <Button size="slim" variant="tertiary" onClick={collapseAll}>Collapse all</Button>
+                  </InlineStack>
+                </InlineStack>
+                <InlineStack gap="200" wrap>
+                  {blocks.filter(b=>b.type!=="config").map((b)=> (
+                    <Button key={`nav-${b.id}`} size="slim" onClick={()=> scrollToBlock(b.id)}>{b.title || b.id}</Button>
+                  ))}
+                </InlineStack>
+              </Card>
               {/* Search Bar */}
               <Card sectioned>
                 <InlineStack align="space-between">
@@ -706,7 +742,7 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
               </Banner>
 
               {/* Config */}
-              <Card title="General Settings" sectioned>
+              <Card title="General Settings" sectioned style={{ position: 'sticky', top: 0, zIndex: 5 }}>
                 <BlockStack gap="300">
                   <TextField
                     label="Title"
@@ -784,7 +820,7 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
                 if (!visible) return null;
 
                 return (
-                  <Card key={block.id || idx} title={`${block.title || block.type} (${block.type})`} sectioned>
+                  <Card ref={(el)=> { if (el) { blockRefs.current[block.id] = el; } }} key={block.id || idx} title={`${block.title || block.type} (${block.type})`} sectioned>
                     <BlockStack gap="300">
                       <InlineStack align="space-between">
                         <div style={{ flex: 1, marginRight: 8 }}>
