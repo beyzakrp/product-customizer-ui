@@ -865,6 +865,14 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
                             helpText="Should be short and unique"
                           />
                         </div>
+                        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8 }}>
+                          
+                          <Checkbox
+                            label="Enabled"
+                            checked={!!block.enabled}
+                            onChange={(v) => updateBlock(idx, { enabled: v })}
+                          />
+                        </div>
                         
                         <div style={{ alignSelf: "flex-end" }}>
                           <Button tone="critical" variant="primary" onClick={() => removeBlock(idx)}>Delete</Button>
@@ -946,7 +954,6 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
 
                           {(block.options || []).map((opt, oIdx) => (
                             <Card key={oIdx} sectioned>
-                          <InlineStack align="space-between" >
                                 <InlineStack align="space-between" blockAlign="center" style={{ width: '100%' }}>
                                   <Text as="h1" variant="headingMd">Option</Text>
                                   <Button
@@ -961,8 +968,8 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
                                   <Divider />
                                 </Box>
                                 {!collapsed.has(`${block.id || String(idx)}-opt-${oIdx}`) && (
-                                  <></>
-                                )}
+                                  <>
+                                <InlineStack align="space-between" >
                                 <div style={{ flex: 1, marginRight: 8 , marginBottom: 8}}>
                               <TextField
                                     label="Label"
@@ -978,7 +985,7 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
                                   />
                                 </div>
                                 </InlineStack>
-                             
+                            
                                 <InlineStack align="space-between" >
                                 <div style={{ width: 200, marginRight: 8 , marginBottom: 10}}>
                                   <Select
@@ -1059,6 +1066,8 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
                               />
                             )}
                           </div>
+                                  </>
+                                )}
                       </Card>
                     ))}
                           <Button onClick={() => addPickerOption(idx)} variant="tertiary">Add Option</Button>
