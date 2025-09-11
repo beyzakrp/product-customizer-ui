@@ -25,7 +25,7 @@ import {
   InlineGrid,
   LegacyCard,
 } from "@shopify/polaris";
-import { NavigationMinor, ArrowUpIcon, ArrowDownIcon } from '@shopify/polaris-icons';
+import { NavigationMinor, ArrowUpIcon, ArrowDownIcon, SettingsIcon } from '@shopify/polaris-icons';
 
 function parseInitial(data) {
   try {
@@ -753,6 +753,10 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
 
               {/* Config */}
               <Card title="General Settings" sectioned style={{ position: 'sticky', top: 0, zIndex: 5 }}>
+                <InlineStack align="space-between">
+              <Icon source={SettingsIcon} tone="base"/>
+                <Text as="h1" variant="headingMd">General Settings</Text>
+                </InlineStack>
                 <BlockStack gap="300">
                   <TextField
                     label="Title"
