@@ -838,11 +838,6 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
                             <Button size="slim" onClick={() => duplicateBlock(idx)}>Duplicate</Button>
                             <Button size="slim" onClick={() => toggleCollapse(block.id || String(idx))}>{collapsed.has(block.id || String(idx)) ? 'Expand' : 'Collapse'}</Button> 
                           </ButtonGroup>
-                          <Checkbox
-                            label="Enabled"
-                            checked={!!block.enabled}
-                            onChange={(v) => updateBlock(idx, { enabled: v })}
-                          />
                         </div>
                     </InlineStack>
                     <Box paddingBlockStart="200" paddingBlockEnd="200">
@@ -1820,21 +1815,64 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
                   <Divider style="margin: 10px 0;"/>
                   <BlockStack gap="200">
                     {blocks.filter(b=>b.type!=="config").map((b, i)=> (
-                      <InlineStack key={`nav-${b.id}`} align="space-between" blockAlign="center">
-                        <Button
-                          size="slim"
-                          variant={(selectedOnlyId ? (selectedOnlyId===b.id) : false) ? 'primary' : 'tertiary'}
-                          onClick={()=> showOnlyBlock(b.id)}
-                        >
-                          {b.title || b.id}
-                        </Button>
-                        <InlineStack gap="100">
-                          <Button size="slim" icon={ArrowUpIcon} onClick={()=> moveBlock(i, i-1)} disabled={i===0}>
+                      <div key={`nav-${b.id}`}> 
+                        <InlineStack align="space-between" blockAlign="center">
+                          <Button
+                            size="slim"
+                            variant={(selectedOnlyId ? (selectedOnlyId===b.id) : false) ? 'primary' : 'tertiary'}
+                            onClick={()=> showOnlyBlock(b.id)}
+                          >
+                            {b.title || b.id}
                           </Button>
-                          <Button size="slim" icon={ArrowDownIcon} onClick={()=> moveBlock(i, i+1)} disabled={i===(blocks.length-1)}>
-                          </Button>
+                          <InlineStack gap="100">
+                            <Button size="slim" icon={ArrowUpIcon} onClick={()=> moveBlock(i, i-1)} disabled={i===0}>
+                            </Button>
+                            <Button size="slim" icon={ArrowDownIcon} onClick={()=> moveBlock(i, i+1)} disabled={i===(blocks.length-1)}>
+                            </Button>
+                          </InlineStack>
                         </InlineStack>
-                      </InlineStack>
+                        {/* Alt başlıklar: Guide section titles, Nested item titles */}
+                        {selectedOnlyId === b.id && (
+                          <LegacyCard title="Bölüm Başlıkları" sectioned>
+                            <BlockStack gap="100">
+                              {/* Guide başlıkları */}
+                              {b.guide?.enabled && Array.isArray(b.guide?.sections) && b.guide.sections.map((section, sIdx) => (
+                                <Button
+                                  key={`guide-title-${b.id}-${sIdx}`}
+                                  size="slim"
+                                  variant="tertiary"
+                                  onClick={() => {
+                                    // Guide section'a scroll
+                                    const guideId = `${b.id}-guide-${sIdx}`;
+                                    const el = document.getElementById(guideId);
+                                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                  }}
+                                >
+                                  {section.title || `Guide Section ${sIdx+1}`}
+                                </Button>
+                              ))}
+                              {/* Nested item başlıkları */}
+                              {Array.isArray(b.nested) && b.nested.map((ng, nIdx) => (
+                                (ng.items || []).map((item, itemIdx) => (
+                                  <Button
+                                    key={`nested-title-${b.id}-${nIdx}-${itemIdx}`}
+                                    size="slim"
+                                    variant="tertiary"
+                                    onClick={() => {
+                                      // Nested item'a scroll
+                                      const nestedId = `${b.id}-nested-${nIdx}-item-${itemIdx}`;
+                                      const el = document.getElementById(nestedId);
+                                      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                    }}
+                                  >
+                                    {item.title || `Nested Item ${itemIdx+1}`}
+                                  </Button>
+                                ))
+                              ))}
+                            </BlockStack>
+                          </LegacyCard>
+                        )}
+                      </div>
                     ))}
                   </BlockStack>
                 </LegacyCard>
