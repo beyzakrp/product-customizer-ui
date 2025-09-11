@@ -19,10 +19,6 @@ import {
   Scrollable,
   Collapsible,
   Divider,
-  Link,
-  Icon,
-  Thumbnail,
-  InlineGrid,
   LegacyCard,
 } from "@shopify/polaris";
 import { NavigationMinor, ArrowUpIcon, ArrowDownIcon, SettingsIcon } from '@shopify/polaris-icons';
