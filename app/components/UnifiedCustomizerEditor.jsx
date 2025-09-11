@@ -840,7 +840,7 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
                           />
                         </div>
                         <div style={{ alignSelf: "flex-end" }}>
-                          <Button tone="critical" variant="tertiary" onClick={() => removeBlock(idx)}>Delete</Button>
+                          <Button tone="critical" variant="primary" onClick={() => removeBlock(idx)}>Delete</Button>
                         </div>
                       </InlineStack>
 
@@ -970,7 +970,7 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
                             </div>
                             
                                 <div>
-                                  <Button tone="critical" variant="tertiary" onClick={() => removePickerOption(idx, oIdx)}>Delete</Button>
+                                  <Button tone="critical" variant="primary" onClick={() => removePickerOption(idx, oIdx)}>Delete</Button>
                                 </div>
                           </InlineStack>
 
@@ -1042,7 +1042,7 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
                                           <BlockStack gap="300" padding="400">
                                             <InlineStack align="space-between">
                                               <Text variant="bodyMd" as="p" fontWeight="semibold">{item.title || item.type}</Text>
-                                              <Button tone="critical" size="slim" variant="primary" onClick={() => removeNestedItem(idx, nIdx, itemIdx)}>Delete Item</Button>
+                                              <Button tone="critical" variant="primary" onClick={() => removeNestedItem(idx, nIdx, itemIdx)}>Delete Item</Button>
                                             </InlineStack>
                                           
                                             <InlineStack>
