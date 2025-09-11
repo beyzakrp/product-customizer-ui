@@ -753,7 +753,7 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
 
               {/* Config */}
               <Card title="General Settings" sectioned style={{ position: 'sticky', top: 0, zIndex: 5 }}>
-                <InlineStack align="space-between">
+                <InlineStack gap="400">
               <Icon source={SettingsIcon} tone="base"/>
                 <Text as="h1" variant="headingMd">General Settings</Text>
                 </InlineStack>
