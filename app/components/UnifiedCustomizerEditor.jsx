@@ -8,6 +8,7 @@ import {
   Banner,
   BlockStack,
   Checkbox,
+  ButtonGroup,
   Select,
   Page,
   Tabs,
@@ -830,10 +831,12 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
                           />
                         </div>
                         <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8 }}>
-                          <Button size="slim" variant="tertiary" onClick={() => moveBlock(idx, idx - 1)}>Up</Button>
-                          <Button size="slim" variant="tertiary" onClick={() => moveBlock(idx, idx + 1)}>Down</Button>
-                          <Button size="slim" variant="tertiary" onClick={() => duplicateBlock(idx)}>Duplicate</Button>
-                          <Button size="slim" variant="tertiary" onClick={() => toggleCollapse(block.id || String(idx))}>{collapsed.has(block.id || String(idx)) ? 'Expand' : 'Collapse'}</Button>
+                          <ButtonGroup variant="segmented">
+                            <Button size="slim" onClick={() => moveBlock(idx, idx - 1)}>Up</Button>
+                            <Button size="slim" onClick={() => moveBlock(idx, idx + 1)}>Down</Button>
+                            <Button size="slim" onClick={() => duplicateBlock(idx)}>Duplicate</Button>
+                            <Button size="slim" onClick={() => toggleCollapse(block.id || String(idx))}>{collapsed.has(block.id || String(idx)) ? 'Expand' : 'Collapse'}</Button>
+                          </ButtonGroup>
                           <Checkbox
                             label="Enabled"
                             checked={!!block.enabled}
