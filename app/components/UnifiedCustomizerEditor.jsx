@@ -865,18 +865,19 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
                             helpText="Should be short and unique"
                           />
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8 }}>
+                        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 15 }}>
                           
                           <Checkbox
                             label="Enabled"
                             checked={!!block.enabled}
                             onChange={(v) => updateBlock(idx, { enabled: v })}
                           />
-                        </div>
-                        
-                        <div style={{ alignSelf: "flex-end" }}>
+                           <div style={{ alignSelf: "flex-end" }}>
                           <Button tone="critical" variant="primary" onClick={() => removeBlock(idx)}>Delete</Button>
                         </div>
+                        </div>
+                        
+                       
                       </InlineStack>
 
                       {!collapsed.has(block.id || String(idx)) && (
