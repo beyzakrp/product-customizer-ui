@@ -22,6 +22,7 @@ import {
   Icon,
   Thumbnail,
   InlineGrid,
+  LegacyCard,
 } from "@shopify/polaris";
 import { NavigationMinor } from '@shopify/polaris-icons';
 
@@ -131,6 +132,7 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
   const [draftOrderUrl, setDraftOrderUrl] = useState("");
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState({});
+  const [selectedOnlyId, setSelectedOnlyId] = useState(null);
   
   // Refs for scroll-to functionality
   const editorScrollRef = useRef(null);
@@ -143,6 +145,25 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
         element.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
     } catch {}
+  }, []);
+
+  const showOnlyBlock = useCallback((id) => {
+    try {
+      setSelectedOnlyId(id);
+      const next = new Set();
+      for (const b of blocks) {
+        if (b.type !== 'config' && (b.id || String(b.title || b.type)) !== id) {
+          next.add(b.id || String(b.title || b.type));
+        }
+      }
+      setCollapsed(next);
+      scrollToBlock(id);
+    } catch {}
+  }, [blocks, scrollToBlock]);
+
+  const showAllBlocks = useCallback(() => {
+    setSelectedOnlyId(null);
+    setCollapsed(new Set());
   }, []);
 
   // Validation helpers
@@ -712,7 +733,12 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
               {/* Quick Navigation */}
               <Card sectioned>
                 <InlineStack align="space-between" blockAlign="center">
-                  <Text variant="headingSm">Quick navigation</Text>
+                  <InlineStack align="space-between" blockAlign="center">
+                    <Text variant="headingSm">Quick navigation</Text>
+                    {selectedOnlyId && (
+                      <Button size="slim" onClick={showAllBlocks}>← All</Button>
+                    )}
+                  </InlineStack>
                   <InlineStack gap="100">
                     <Button size="slim" variant="tertiary" onClick={expandAll}>Expand all</Button>
                     <Button size="slim" variant="tertiary" onClick={collapseAll}>Collapse all</Button>
@@ -720,7 +746,7 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
                 </InlineStack>
                 <InlineStack gap="200" wrap>
                   {blocks.filter(b=>b.type!=="config").map((b)=> (
-                    <Button key={`nav-${b.id}`} size="slim" onClick={()=> scrollToBlock(b.id)}>{b.title || b.id}</Button>
+                    <Button key={`nav-${b.id}`} size="slim" onClick={()=> showOnlyBlock(b.id)}>{b.title || b.id}</Button>
                   ))}
                 </InlineStack>
               </Card>
@@ -818,6 +844,8 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
                   );
 
                 if (!visible) return null;
+
+                if (selectedOnlyId && (block.id !== selectedOnlyId)) return null;
 
                 return (
                   <Card ref={(el)=> { if (el) { blockRefs.current[block.id] = el; } }} key={block.id || idx} title={`${block.title || block.type} (${block.type})`} sectioned>
