@@ -24,7 +24,7 @@ import {
   InlineGrid,
   LegacyCard,
 } from "@shopify/polaris";
-import { NavigationMinor, ArrowUpMinor, ArrowDownMinor } from '@shopify/polaris-icons';
+import { NavigationMinor, ChevronUpMinor, ChevronDownMinor } from '@shopify/polaris-icons';
 
 function parseInitial(data) {
   try {
@@ -1770,9 +1770,9 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
                           {b.title || b.id}
                         </Button>
                         <InlineStack gap="100">
-                          <Button size="slim" icon={ArrowUpMinor} onClick={()=> moveBlock(i, i-1)} disabled={i===0}>
+                          <Button size="slim" icon={ChevronUpMinor} onClick={()=> moveBlock(i, i-1)} disabled={i===0}>
                           </Button>
-                          <Button size="slim" icon={ArrowDownMinor} onClick={()=> moveBlock(i, i+1)} disabled={i===(blocks.length-1)}>
+                          <Button size="slim" icon={ChevronDownMinor} onClick={()=> moveBlock(i, i+1)} disabled={i===(blocks.length-1)}>
                           </Button>
                         </InlineStack>
                       </InlineStack>
