@@ -763,6 +763,9 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
                     {collapsed.has('config') ? 'Expand' : 'Collapse'}
                   </Button>
                 </InlineStack>
+                <Box paddingBlockStart="200" paddingBlockEnd="200">
+                  <Divider />
+                </Box>
 
                 {!collapsed.has('config') && (
                   <BlockStack gap="300">
@@ -828,14 +831,23 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
                   <Card ref={(el)=> { if (el) { blockRefs.current[block.id] = el; } }} key={block.id || idx} title={`${block.title || block.type} (${block.type})`} sectioned>
                     <InlineStack align="space-between" blockAlign="center">
                       <Text as="h1" variant="headingMd">{block.title || block.type}</Text>
-                      <Button
-                        size="slim"
-                        variant="tertiary"
-                        onClick={() => toggleCollapse(block.id || String(idx))}
-                      >
-                        {collapsed.has(block.id || String(idx)) ? 'Expand' : 'Collapse'}
-                      </Button>
+                      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8 }}>
+                          <ButtonGroup variant="segmented">
+                            <Button size="slim" onClick={() => moveBlock(idx, idx - 1)}>Up</Button>
+                            <Button size="slim" onClick={() => moveBlock(idx, idx + 1)}>Down</Button>
+                            <Button size="slim" onClick={() => duplicateBlock(idx)}>Duplicate</Button>
+                            <Button size="slim" onClick={() => toggleCollapse(block.id || String(idx))}>{collapsed.has(block.id || String(idx)) ? 'Expand' : 'Collapse'}</Button> 
+                          </ButtonGroup>
+                          <Checkbox
+                            label="Enabled"
+                            checked={!!block.enabled}
+                            onChange={(v) => updateBlock(idx, { enabled: v })}
+                          />
+                        </div>
                     </InlineStack>
+                    <Box paddingBlockStart="200" paddingBlockEnd="200">
+                      <Divider />
+                    </Box>
                     <BlockStack gap="300">
                       <InlineStack align="space-between">
                         <div style={{ flex: 1, marginRight: 8 }}>
@@ -853,19 +865,7 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
                             helpText="Should be short and unique"
                           />
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8 }}>
-                          <ButtonGroup variant="segmented">
-                            <Button size="slim" onClick={() => moveBlock(idx, idx - 1)}>Up</Button>
-                            <Button size="slim" onClick={() => moveBlock(idx, idx + 1)}>Down</Button>
-                            <Button size="slim" onClick={() => duplicateBlock(idx)}>Duplicate</Button>
-                           {/* <Button size="slim" onClick={() => toggleCollapse(block.id || String(idx))}>{collapsed.has(block.id || String(idx)) ? 'Expand' : 'Collapse'}</Button> */}
-                          </ButtonGroup>
-                          <Checkbox
-                            label="Enabled"
-                            checked={!!block.enabled}
-                            onChange={(v) => updateBlock(idx, { enabled: v })}
-                          />
-                        </div>
+                        
                         <div style={{ alignSelf: "flex-end" }}>
                           <Button tone="critical" variant="primary" onClick={() => removeBlock(idx)}>Delete</Button>
                         </div>
@@ -885,6 +885,9 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
                               {collapsed.has(`${block.id || String(idx)}-pricing`) ? 'Expand' : 'Collapse'}
                             </Button>
                           </InlineStack>
+                          <Box paddingBlockStart="200" paddingBlockEnd="200">
+                            <Divider />
+                          </Box>
 
                           {!collapsed.has(`${block.id || String(idx)}-pricing`) && (
                             <>
@@ -954,6 +957,9 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
                                     {collapsed.has(`${block.id || String(idx)}-opt-${oIdx}`) ? 'Expand' : 'Collapse'}
                                   </Button>
                                 </InlineStack>
+                                <Box paddingBlockStart="200" paddingBlockEnd="200" style={{ width: '100%' }}>
+                                  <Divider />
+                                </Box>
                                 {!collapsed.has(`${block.id || String(idx)}-opt-${oIdx}`) && (
                                   <></>
                                 )}
@@ -1854,6 +1860,9 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
                     {collapsed.has('preview') ? 'Expand' : 'Collapse'}
                   </Button>
                 </InlineStack>
+                <Box paddingBlockStart="200" paddingBlockEnd="200">
+                  <Divider />
+                </Box>
                 {!collapsed.has('preview') && (
                   <BlockStack gap="300">
                   {(blocks.filter(b=>b.type!=="config")).map((block) => (
