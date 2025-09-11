@@ -232,45 +232,50 @@ export default function Products() {
           </Card>
         </Layout.Section>
 
-        {/* Product detail cards */}
-        {products.map((product) => (
-          <Layout.Section key={product.id}>
-            
-            {/* Inline Editor */}
-            {expanded === product.id.split("/").pop() && (
-              <Layout.Section>
-                <UnifiedCustomizerEditor
-                  productId={product.id.split("/").pop()}
-                  productTitle={product.title}
-                  initialValue={(() => {
-                    const edges = product.metafields?.edges || [];
-                    const optionsEdge = edges.find(({node}) => node.key === "options");
-                    return optionsEdge?.node?.value || "[]";
-                  })()}
-                  onSave={(config)=> fetcher.submit({productId: product.id.split("/").pop(), customizerOptions: JSON.stringify(config)}, {method:"post"})}
-                  onCancel={() => {
-                    const params = new URLSearchParams(location.search);
-                    params.delete("product");
-                    navigate(`?${params.toString()}`, { replace: true });
-                  }}
-                />
-              </Layout.Section>
-            )}
-          </Layout.Section>
-        ))}
+        {/* Product detail editor (render only for expanded product) */}
+        {products.map((product) => {
+          const numericId = product.id.split("/").pop();
+          const isExpanded = expanded === numericId;
+          if (!isExpanded) return null;
+          return (
+            <Layout.Section key={product.id}>
+              <UnifiedCustomizerEditor
+                productId={numericId}
+                productTitle={product.title}
+                initialValue={(() => {
+                  const edges = product.metafields?.edges || [];
+                  const optionsEdge = edges.find(({ node }) => node.key === "options");
+                  return optionsEdge?.node?.value || "[]";
+                })()}
+                onSave={(config) =>
+                  fetcher.submit(
+                    { productId: numericId, customizerOptions: JSON.stringify(config) },
+                    { method: "post" }
+                  )
+                }
+                onCancel={() => {
+                  const params = new URLSearchParams(location.search);
+                  params.delete("product");
+                  navigate(`?${params.toString()}`, { replace: true });
+                }}
+              />
+            </Layout.Section>
+          );
+        })}
+        {/* Debug toggle */}
+        <Layout.Section>
+          <Button onClick={() => setShowDebug(!showDebug)} variant="tertiary">
+            {showDebug ? "Hide Debug" : "Show Debug"}
+          </Button>
+          {showDebug && (
+            <Card>
+              <pre style={{ whiteSpace: "pre-wrap", wordBreak: "break-all" }}>
+                {JSON.stringify(products, null, 2)}
+              </pre>
+            </Card>
+          )}
+        </Layout.Section>
       </Layout>
-      <Layout.Section>
-        <Button onClick={() => setShowDebug(!showDebug)} variant="tertiary">
-          {showDebug ? "Hide Debug" : "Show Debug"}
-        </Button>
-        {showDebug && (
-          <Card>
-            <pre style={{whiteSpace:"pre-wrap", wordBreak:"break-all"}}>
-              {JSON.stringify(products, null, 2)}
-            </pre>
-          </Card>
-        )}
-      </Layout.Section>
     </Page>
   );
 } 
