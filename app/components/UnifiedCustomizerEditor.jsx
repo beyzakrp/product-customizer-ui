@@ -853,9 +853,7 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
                       {block.type !== 'area' && (
                         <Card title="Pricing" sectioned>
                           {block.type === 'picker' ? (
-                            <div style={{ fontSize: 12, color: '#666' }}>
-                              Pricing options are available for Picker. Use Mode (None/Added/Multiplier) and Value fields on each option card.
-                            </div>
+                           <Divider />
                           ) : (
                             <>
                               <InlineStack>
@@ -884,9 +882,7 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
                                   />
                                 </div>
                               </InlineStack>
-                              <div style={{ fontSize: 12, color: '#666', marginTop: 6 }}>
-                                Added is a fixed extra charge, Multiplier applies a multiplier to unit price (per inch).
-                              </div>
+                              
                             </>
                           )}
                         </Card>
@@ -1537,9 +1533,7 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
                                 onChange={(v) => updateBlock(idx, { limits: { ...(block.limits || {}), width: { ...(block.limits?.width || {}), min: parseFloat(v) } } })}
                         />
                             </div>
-                          <Banner tone="subdued">
-                            <p>Minimum width limit in inches. The final price is calculated by multiplying the unit price (per inch) with the customer's width input.</p>
-                          </Banner>
+                          
 
                           {/* Has Guide Section Checkbox */}
                           <Checkbox
