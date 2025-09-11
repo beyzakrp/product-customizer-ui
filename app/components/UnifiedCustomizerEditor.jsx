@@ -24,7 +24,7 @@ import {
   InlineGrid,
   LegacyCard,
 } from "@shopify/polaris";
-import { NavigationMinor } from '@shopify/polaris-icons';
+import { NavigationMinor, ArrowUpMinor, ArrowDownMinor } from '@shopify/polaris-icons';
 
 function parseInitial(data) {
   try {
@@ -1758,10 +1758,24 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
                       <Button size="slim" variant="tertiary" onClick={collapseAll}>Collapse all</Button>
                     </InlineStack>
                   </InlineStack>
-                  <Divider />
+                  <Divider style={{ marginBlockStart: '1rem', marginBlockEnd: '1rem' }}/>
                   <BlockStack gap="200">
-                    {blocks.filter(b=>b.type!=="config").map((b)=> (
-                      <Button key={`nav-${b.id}`} size="slim" onClick={()=> showOnlyBlock(b.id)}>{b.title || b.id}</Button>
+                    {blocks.filter(b=>b.type!=="config").map((b, i)=> (
+                      <InlineStack key={`nav-${b.id}`} align="space-between" blockAlign="center">
+                        <Button
+                          size="slim"
+                          variant={(selectedOnlyId ? (selectedOnlyId===b.id) : false) ? 'primary' : 'tertiary'}
+                          onClick={()=> showOnlyBlock(b.id)}
+                        >
+                          {b.title || b.id}
+                        </Button>
+                        <InlineStack gap="100">
+                          <Button size="slim" icon={ArrowUpMinor} onClick={()=> moveBlock(i, i-1)} disabled={i===0}>
+                          </Button>
+                          <Button size="slim" icon={ArrowDownMinor} onClick={()=> moveBlock(i, i+1)} disabled={i===(blocks.length-1)}>
+                          </Button>
+                        </InlineStack>
+                      </InlineStack>
                     ))}
                   </BlockStack>
                 </LegacyCard>
