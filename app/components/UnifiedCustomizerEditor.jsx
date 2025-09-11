@@ -745,9 +745,10 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
                 </InlineStack>
               </Card>
               
-              <Banner tone="info">
+             {/* <Banner tone="info">
                 3 types are supported: Picker, Input (text/number), Area. Multiplier only applies to base price.
               </Banner>
+*/}
 
               {/* Config */}
               <Card title="General Settings" sectioned style={{ position: 'sticky', top: 0, zIndex: 5 }}>
@@ -1758,7 +1759,7 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
                       <Button size="slim" variant="tertiary" onClick={collapseAll}>Collapse all</Button>
                     </InlineStack>
                   </InlineStack>
-                  <Divider style={{ marginBlockStart: '1rem', marginBlockEnd: '1rem' }}/>
+                  <Divider style="margin: 10px 0;"/>
                   <BlockStack gap="200">
                     {blocks.filter(b=>b.type!=="config").map((b, i)=> (
                       <InlineStack key={`nav-${b.id}`} align="space-between" blockAlign="center">
