@@ -729,27 +729,9 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
       <Tabs tabs={tabs} selected={selectedTab} onSelect={handleTabChange}>
         <div style={{ paddingTop: '1.6rem' }}>
           {selectedTab === 0 ? (
-            <BlockStack gap="400">
-              {/* Quick Navigation */}
-              <Card sectioned>
-                <InlineStack align="space-between" blockAlign="center">
-                  <InlineStack align="space-between" blockAlign="center">
-                    <Text variant="headingSm">Quick navigation</Text>
-                    {selectedOnlyId && (
-                      <Button size="slim" onClick={showAllBlocks}>← All</Button>
-                    )}
-                  </InlineStack>
-                  <InlineStack gap="100">
-                    <Button size="slim" variant="tertiary" onClick={expandAll}>Expand all</Button>
-                    <Button size="slim" variant="tertiary" onClick={collapseAll}>Collapse all</Button>
-                  </InlineStack>
-                </InlineStack>
-                <InlineStack gap="200" wrap>
-                  {blocks.filter(b=>b.type!=="config").map((b)=> (
-                    <Button key={`nav-${b.id}`} size="slim" onClick={()=> showOnlyBlock(b.id)}>{b.title || b.id}</Button>
-                  ))}
-                </InlineStack>
-              </Card>
+            <Layout>
+              <Layout.Section>
+                <BlockStack gap="400">
               {/* Search Bar */}
               <Card sectioned>
                 <InlineStack align="space-between">
@@ -813,26 +795,6 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
               </Card>
 
               <div style={{ height: 8 }} />
-
-              {/* Add Block */}
-              <Card sectioned>
-                <InlineStack align="space-between">
-                  <InlineStack gap="200">
-                    <Select
-                      label="Add block type"
-                      labelHidden
-                      options={[
-                        { label: "Picker", value: "picker" },
-                        { label: "Input", value: "input" },
-                        { label: "Area", value: "area" },
-                      ]}
-                      value={newBlockType}
-                      onChange={setNewBlockType}
-                    />
-                    <Button onClick={addBlock} variant="tertiary">Add Block</Button>
-                  </InlineStack>
-                </InlineStack>
-              </Card>
 
               {/* Blocks List */}
               {blocks.map((block, idx) => {
@@ -1783,7 +1745,44 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
                   </Card>
                 );
               })}
-            </BlockStack>
+                </BlockStack>
+              </Layout.Section>
+              <Layout.Section variant="oneThird">
+                <LegacyCard title="Quick navigation" sectioned>
+                  <InlineStack align="space-between" blockAlign="center">
+                    {selectedOnlyId && (
+                      <Button size="slim" onClick={showAllBlocks}>← All</Button>
+                    )}
+                    <InlineStack gap="100">
+                      <Button size="slim" variant="tertiary" onClick={expandAll}>Expand all</Button>
+                      <Button size="slim" variant="tertiary" onClick={collapseAll}>Collapse all</Button>
+                    </InlineStack>
+                  </InlineStack>
+                  <Divider />
+                  <BlockStack gap="200">
+                    {blocks.filter(b=>b.type!=="config").map((b)=> (
+                      <Button key={`nav-${b.id}`} size="slim" onClick={()=> showOnlyBlock(b.id)}>{b.title || b.id}</Button>
+                    ))}
+                  </BlockStack>
+                </LegacyCard>
+                <LegacyCard sectioned>
+                  <InlineStack align="space-between">
+                    <Select
+                      label="Add block type"
+                      labelHidden
+                      options={[
+                        { label: "Picker", value: "picker" },
+                        { label: "Input", value: "input" },
+                        { label: "Area", value: "area" },
+                      ]}
+                      value={newBlockType}
+                      onChange={setNewBlockType}
+                    />
+                    <Button onClick={addBlock} variant="primary">Add</Button>
+                  </InlineStack>
+                </LegacyCard>
+              </Layout.Section>
+            </Layout>
           ) : (
             <div style={{ paddingTop: '1.6rem' }}>
               {/* Preview */}
