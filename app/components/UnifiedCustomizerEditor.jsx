@@ -1827,47 +1827,6 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
                             </Button>
                           </InlineStack>
                         </InlineStack>
-                        {/* Alt başlıklar: Guide section titles, Nested item titles */}
-                        {selectedOnlyId === b.id && (
-                          <LegacyCard title="Bölüm Başlıkları" sectioned>
-                            <BlockStack gap="100">
-                              {/* Guide başlıkları */}
-                              {b.guide?.enabled && Array.isArray(b.guide?.sections) && b.guide.sections.map((section, sIdx) => (
-                                <Button
-                                  key={`guide-title-${b.id}-${sIdx}`}
-                                  size="slim"
-                                  variant="tertiary"
-                                  onClick={() => {
-                                    // Guide section'a scroll
-                                    const guideId = `${b.id}-guide-${sIdx}`;
-                                    const el = document.getElementById(guideId);
-                                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                                  }}
-                                >
-                                  {section.title || `Guide Section ${sIdx+1}`}
-                                </Button>
-                              ))}
-                              {/* Nested item başlıkları */}
-                              {Array.isArray(b.nested) && b.nested.map((ng, nIdx) => (
-                                (ng.items || []).map((item, itemIdx) => (
-                                  <Button
-                                    key={`nested-title-${b.id}-${nIdx}-${itemIdx}`}
-                                    size="slim"
-                                    variant="tertiary"
-                                    onClick={() => {
-                                      // Nested item'a scroll
-                                      const nestedId = `${b.id}-nested-${nIdx}-item-${itemIdx}`;
-                                      const el = document.getElementById(nestedId);
-                                      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                                    }}
-                                  >
-                                    {item.title || `Nested Item ${itemIdx+1}`}
-                                  </Button>
-                                ))
-                              ))}
-                            </BlockStack>
-                          </LegacyCard>
-                        )}
                       </div>
                     ))}
                   </BlockStack>
