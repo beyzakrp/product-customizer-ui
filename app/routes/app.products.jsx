@@ -25,10 +25,24 @@ import { authenticate } from "../shopify.server";
 
 export async function loader({ request }) {
   const { admin } = await authenticate.admin(request);
+  
+  // URL'den pagination parametrelerini al
+  const url = new URL(request.url);
+  const cursor = url.searchParams.get('cursor');
+  const direction = url.searchParams.get('direction') || 'forward';
+  const limit = Math.min(parseInt(url.searchParams.get('limit')) || 250, 250); // Maksimum 250
+
+  // GraphQL sorgusunu dinamik olarak oluştur
+  let queryArgs = `first: ${limit}`;
+  if (cursor && direction === 'forward') {
+    queryArgs = `first: ${limit}, after: "${cursor}"`;
+  } else if (cursor && direction === 'backward') {
+    queryArgs = `last: ${limit}, before: "${cursor}"`;
+  }
 
   const response = await admin.graphql(
     `query {
-      products(first: 50) {
+      products(${queryArgs}) {
         edges {
           node {
             id
@@ -49,10 +63,13 @@ export async function loader({ request }) {
               }
             }
           }
+          cursor
         }
         pageInfo {
           hasNextPage
           hasPreviousPage
+          startCursor
+          endCursor
         }
       }
     }`
@@ -61,7 +78,11 @@ export async function loader({ request }) {
   const data = await response.json();
   return json({ 
     products: data.data.products.edges.map((e) => e.node),
-    pageInfo: data.data.products.pageInfo 
+    pageInfo: data.data.products.pageInfo,
+    cursors: {
+      startCursor: data.data.products.pageInfo.startCursor,
+      endCursor: data.data.products.pageInfo.endCursor
+    }
   });
 }
 
@@ -118,7 +139,7 @@ export async function action({ request }) {
 }
 
 export default function Products() {
-  const { products, pageInfo } = useLoaderData();
+  const { products, pageInfo, cursors } = useLoaderData();
   const [showDebug, setShowDebug] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
@@ -228,6 +249,47 @@ export default function Products() {
                 rows={rows}
                 hoverable
               />
+              
+              {/* Pagination Controls */}
+              {(pageInfo.hasNextPage || pageInfo.hasPreviousPage) && (
+                <div style={{ padding: '16px', borderTop: '1px solid #e3e3e3' }}>
+                  <InlineStack align="space-between" blockAlign="center">
+                    <div>
+                      {pageInfo.hasPreviousPage && (
+                        <Button
+                          onClick={() => {
+                            const params = new URLSearchParams(location.search);
+                            params.set('cursor', cursors.startCursor);
+                            params.set('direction', 'backward');
+                            navigate(`?${params.toString()}`);
+                          }}
+                          variant="secondary"
+                        >
+                          ← Previous
+                        </Button>
+                      )}
+                    </div>
+                    <Text variant="bodyMd" color="subdued">
+                      Showing {products.length} products
+                    </Text>
+                    <div>
+                      {pageInfo.hasNextPage && (
+                        <Button
+                          onClick={() => {
+                            const params = new URLSearchParams(location.search);
+                            params.set('cursor', cursors.endCursor);
+                            params.set('direction', 'forward');
+                            navigate(`?${params.toString()}`);
+                          }}
+                          variant="secondary"
+                        >
+                          Next →
+                        </Button>
+                      )}
+                    </div>
+                  </InlineStack>
+                </div>
+              )}
             </BlockStack>
           </Card>
         </Layout.Section>
