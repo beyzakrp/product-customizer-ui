@@ -21,7 +21,7 @@ import {
   Divider,
   LegacyCard,
 } from "@shopify/polaris";
-import { NavigationMinor, ArrowUpIcon, ArrowDownIcon, SettingsIcon } from '@shopify/polaris-icons';
+import {  ArrowUpIcon, ArrowDownIcon } from '@shopify/polaris-icons';
 
 function parseInitial(data) {
   try {
@@ -2123,8 +2123,16 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
           </BlockStack>
         </Modal.Section>
       </Modal>
-      {/* Fixed footer bottom right */}
-      
+       <div style={{
+        position: 'fixed',
+        right: 5,
+        bottom: 5,
+        zIndex: 9999,
+        color: '#f49d9dff',
+        fontSize: 10,
+      }}>
+        Made with <span style={{color:'#e25555', fontWeight:'bold'}}>&lt;3</span> by Beyza for Renart 
+      </div>      
     </Page>
   );
 }

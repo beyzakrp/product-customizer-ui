@@ -338,6 +338,16 @@ export default function Products() {
           )}
         </Layout.Section>
       </Layout>
+      <div style={{
+        position: 'fixed',
+        right: 5,
+        bottom: 5,
+        zIndex: 9999,
+        color: '#f49d9dff',
+        fontSize: 10,
+      }}>
+        Made with <span style={{color:'#e25555', fontWeight:'bold'}}>&lt;3</span> by Beyza for Renart 
+      </div>
     </Page>
   );
 } 
