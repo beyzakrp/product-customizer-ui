@@ -2137,7 +2137,7 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
         borderRadius: 8,
         boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
       }}>
-        Made with <span style={{color:'#e25555', fontWeight:'bold'}}>&lt;3</span> by Beyza for Renart :)
+        Made with <span style={{color:'#e25555', fontWeight:'bold'}}>&lt;3</span> by Beyza for Renart 
       </div>
     </Page>
   );
