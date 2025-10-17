@@ -186,16 +186,12 @@ export default function Index() {
       </BlockStack>
       <div style={{
         position: 'fixed',
-        right: 16,
-        bottom: 12,
+        right: 5,
+        bottom: 5,
         zIndex: 9999,
-        color: '#888',
-        fontSize: 14,
-        fontFamily: 'inherit',
-        background: 'rgba(255,255,255,0.85)',
-        padding: '4px 12px',
-        borderRadius: 8,
-        boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
+        color: rgb(222, 143, 149),
+        fontSize: 10,
+        fontFamily: inherit,
       }}>
         Made with <span style={{color:'#e25555', fontWeight:'bold'}}>&lt;3</span> by Beyza for Renart 
       </div>
