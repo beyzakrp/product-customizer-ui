@@ -2124,17 +2124,7 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
         </Modal.Section>
       </Modal>
       {/* Fixed footer bottom right */}
-      <div style={{
-        position: 'fixed',
-        right: 5,
-        bottom: 5,
-        zIndex: 9999,
-        color: rgb(222, 143, 149),
-        fontSize: 10,
-        fontFamily: inherit,
-      }}>
-        Made with <span style={{color:'#e25555', fontWeight:'bold'}}>&lt;3</span> by Beyza for Renart 
-      </div>
+      
     </Page>
   );
 }
