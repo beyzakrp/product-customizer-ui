@@ -13,11 +13,11 @@ api_version = "2025-07"
 
   [[webhooks.subscriptions]]
   topics = [ "app/scopes_update" ]
-  uri = "https://hanging-need-verbal-couple.trycloudflare.com/webhooks/app/scopes_update"
+  uri = "https://product-customizer-ui.vercel.app/webhooks/app/scopes_update"
 
   [[webhooks.subscriptions]]
   topics = [ "app/uninstalled" ]
-  uri = "https://hanging-need-verbal-couple.trycloudflare.com/webhooks/app/uninstalled"
+  uri = "https://product-customizer-ui.vercel.app/webhooks/app/uninstalled"
 
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
@@ -26,9 +26,9 @@ scopes = "write_draft_orders,read_draft_orders,read_files,write_files,write_orde
 
 [auth]
 redirect_urls = [
-  "https://hanging-need-verbal-couple.trycloudflare.com/auth/callback",
-  "https://hanging-need-verbal-couple.trycloudflare.com/auth/shopify/callback",
-  "https://hanging-need-verbal-couple.trycloudflare.com/api/auth/callback"
+  "https://product-customizer-ui.vercel.app/auth/callback",
+  "https://product-customizer-ui.vercel.app/auth/shopify/callback",
+  "https://product-customizer-ui.vercel.app/api/auth/callback"
 ]
 
 [pos]
