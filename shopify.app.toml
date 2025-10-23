@@ -1,10 +1,9 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
-client_id = "f1c42fe6630285441b2264d62361d0a8"
+client_id = "937137ad6bb47cdbb19f21e08a287d77"
 name = "product-customizer-ui"
 application_url = "https://product-customizer-ui.vercel.app/"
 embedded = true
-handle = "product-customizer-ui"
 
 [build]
 automatically_update_urls_on_dev = true
@@ -22,7 +21,7 @@ api_version = "2025-07"
 
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
-scopes = "read_products,write_products,read_draft_orders,write_draft_orders,read_files,write_files"
+scopes = "write_draft_orders,read_draft_orders,read_files,write_files,write_order_edits,read_order_edits,read_orders,write_orders,read_products,write_products"
 
 
 [auth]
