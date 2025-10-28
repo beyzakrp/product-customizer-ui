@@ -296,7 +296,6 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
             quantity: 1,
             customAttributes: [
               { key: '_product_title', value: productTitle || 'Unknown Product' },
-              { key: '_config', value: JSON.stringify(summary.config || []) },
               { key: '_selections', value: JSON.stringify(summary.selections || {}) },
               { key: '_currency', value: summary.currency || 'USD' }
             ]
@@ -315,7 +314,6 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
           quantity: 1,
           customAttributes: [
             { key: '_product_title', value: productTitle || 'Unknown Product' },
-            { key: '_config', value: JSON.stringify(summary?.config || []) },
             { key: '_selections', value: JSON.stringify(summary?.selections || {}) },
             { key: '_currency', value: summary?.currency || 'USD' }
           ]
