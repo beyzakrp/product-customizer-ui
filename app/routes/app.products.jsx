@@ -20,7 +20,10 @@ import {
   TextField,
   Checkbox,
   BlockStack,
+  Collapsible,
+  Icon,
 } from "@shopify/polaris";
+import { ChevronDownIcon, ChevronUpIcon } from '@shopify/polaris-icons';
 import { authenticate } from "../shopify.server";
 
 export async function loader({ request }) {
@@ -146,6 +149,9 @@ export default function Products() {
   const [expanded, setExpanded] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterByTag, setFilterByTag] = useState(false);
+  const [productListCollapsed, setProductListCollapsed] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 20;
   const fetcher = useFetcher();
   const { showToast } = useOutletContext();
 
@@ -154,6 +160,11 @@ export default function Products() {
     const searchParams = new URLSearchParams(location.search);
     const productId = searchParams.get("product");
     setExpanded(productId);
+    
+    // Ürün seçildiğinde product listesini collapse et
+    if (productId) {
+      setProductListCollapsed(true);
+    }
   }, [location.search]);
 
   useEffect(() => {
@@ -173,7 +184,18 @@ export default function Products() {
     return titleMatch && tagMatch;
   });
 
-  const rows = filteredProducts.map((product) => [
+  // Pagination hesaplamaları
+  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedProducts = filteredProducts.slice(startIndex, endIndex);
+
+  // Search veya filter değiştiğinde sayfayı 1'e sıfırla
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filterByTag]);
+
+  const rows = paginatedProducts.map((product) => [
     product.title,
     product.handle,
     <Badge status={product.status === "ACTIVE" ? "success" : "attention"}>
@@ -225,72 +247,134 @@ export default function Products() {
       <Layout>
         <Layout.Section>
           <Card>
-            <BlockStack gap="400">
-              <div style={{ padding: '16px' }}>
-                <BlockStack gap="400">
-                  <Text variant="headingMd">Filter and Search</Text>
-                  <TextField
-                    label="Product Name"
-                    value={searchTerm}
-                    onChange={setSearchTerm}
-                    autoComplete="off"
-                    placeholder="Search by product name..."
-                  />
-                  <Checkbox
-                    label="Show only customizable products (products with product-customizer tag)"
-                    checked={filterByTag}
-                    onChange={(checked) => setFilterByTag(checked)}
-                  />
-                </BlockStack>
-              </div>
-              <DataTable
-                columnContentTypes={['text', 'text', 'text', 'text', 'text']}
-                headings={['Product Name', 'Handle', 'Status', 'Created At', 'Actions']}
-                rows={rows}
-                hoverable
-              />
+            <div 
+              onClick={() => setProductListCollapsed(!productListCollapsed)}
+              style={{ 
+                padding: '16px', 
+                cursor: 'pointer',
+                borderBottom: productListCollapsed ? 'none' : '1px solid #e3e3e3'
+              }}
+            >
+              <InlineStack align="space-between" blockAlign="center">
+                <Text variant="headingLg">Product List ({filteredProducts.length})</Text>
+                <Button
+                  icon={productListCollapsed ? ChevronDownIcon : ChevronUpIcon}
+                  variant="plain"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setProductListCollapsed(!productListCollapsed);
+                  }}
+                >
+                  {productListCollapsed ? 'Show' : 'Hide'}
+                </Button>
+              </InlineStack>
+            </div>
+            <Collapsible
+              open={!productListCollapsed}
+              id="product-list-collapsible"
+              transition={{duration: '200ms', timingFunction: 'ease-in-out'}}
+            >
+              <BlockStack gap="400">
+                <div style={{ padding: '16px' }}>
+                  <BlockStack gap="400">
+                    <Text variant="headingMd">Filter and Search</Text>
+                    <TextField
+                      label="Product Name"
+                      value={searchTerm}
+                      onChange={setSearchTerm}
+                      autoComplete="off"
+                      placeholder="Search by product name..."
+                    />
+                    <Checkbox
+                      label="Show only customizable products (products with product-customizer tag)"
+                      checked={filterByTag}
+                      onChange={(checked) => setFilterByTag(checked)}
+                    />
+                  </BlockStack>
+                </div>
+                <DataTable
+                  columnContentTypes={['text', 'text', 'text', 'text', 'text']}
+                  headings={['Product Name', 'Handle', 'Status', 'Created At', 'Actions']}
+                  rows={rows}
+                  hoverable
+                />
               
-              {/* Pagination Controls */}
-              {(pageInfo.hasNextPage || pageInfo.hasPreviousPage) && (
-                <div style={{ padding: '16px', borderTop: '1px solid #e3e3e3' }}>
-                  <InlineStack align="space-between" blockAlign="center">
-                    <div>
-                      {pageInfo.hasPreviousPage && (
+                {/* Product List Pagination */}
+                {totalPages > 1 && (
+                  <div style={{ padding: '16px', borderTop: '1px solid #e3e3e3' }}>
+                    <InlineStack align="space-between" blockAlign="center">
+                      <div>
                         <Button
-                          onClick={() => {
-                            const params = new URLSearchParams(location.search);
-                            params.set('cursor', cursors.startCursor);
-                            params.set('direction', 'backward');
-                            navigate(`?${params.toString()}`);
-                          }}
+                          onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                          disabled={currentPage === 1}
                           variant="secondary"
                         >
                           ← Previous
                         </Button>
-                      )}
-                    </div>
-                    <Text variant="bodyMd" color="subdued">
-                      Showing {products.length} products
-                    </Text>
-                    <div>
-                      {pageInfo.hasNextPage && (
+                      </div>
+                      <InlineStack gap="200" blockAlign="center">
+                        <Text variant="bodyMd" color="subdued">
+                          Page {currentPage} of {totalPages}
+                        </Text>
+                        <Text variant="bodyMd" color="subdued">
+                          ({startIndex + 1}-{Math.min(endIndex, filteredProducts.length)} of {filteredProducts.length} products)
+                        </Text>
+                      </InlineStack>
+                      <div>
                         <Button
-                          onClick={() => {
-                            const params = new URLSearchParams(location.search);
-                            params.set('cursor', cursors.endCursor);
-                            params.set('direction', 'forward');
-                            navigate(`?${params.toString()}`);
-                          }}
+                          onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                          disabled={currentPage === totalPages}
                           variant="secondary"
                         >
                           Next →
                         </Button>
-                      )}
-                    </div>
-                  </InlineStack>
-                </div>
-              )}
-            </BlockStack>
+                      </div>
+                    </InlineStack>
+                  </div>
+                )}
+
+                {/* API Pagination Controls */}
+                {(pageInfo.hasNextPage || pageInfo.hasPreviousPage) && (
+                  <div style={{ padding: '16px', borderTop: '1px solid #e3e3e3' }}>
+                    <InlineStack align="space-between" blockAlign="center">
+                      <div>
+                        {pageInfo.hasPreviousPage && (
+                          <Button
+                            onClick={() => {
+                              const params = new URLSearchParams(location.search);
+                              params.set('cursor', cursors.startCursor);
+                              params.set('direction', 'backward');
+                              navigate(`?${params.toString()}`);
+                            }}
+                            variant="secondary"
+                          >
+                            ← Previous
+                          </Button>
+                        )}
+                      </div>
+                      <Text variant="bodyMd" color="subdued">
+                        Showing {products.length} products
+                      </Text>
+                      <div>
+                        {pageInfo.hasNextPage && (
+                          <Button
+                            onClick={() => {
+                              const params = new URLSearchParams(location.search);
+                              params.set('cursor', cursors.endCursor);
+                              params.set('direction', 'forward');
+                              navigate(`?${params.toString()}`);
+                            }}
+                            variant="secondary"
+                          >
+                            Next →
+                          </Button>
+                        )}
+                      </div>
+                    </InlineStack>
+                  </div>
+                )}
+              </BlockStack>
+            </Collapsible>
           </Card>
         </Layout.Section>
 

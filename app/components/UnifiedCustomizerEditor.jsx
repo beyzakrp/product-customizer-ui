@@ -763,6 +763,18 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
 
                 {!collapsed.has('config') && (
                   <BlockStack gap="300">
+                  {productTitle && (
+                    <div style={{ 
+                      padding: '12px 16px', 
+                      background: '#f6f6f7', 
+                      borderRadius: '8px',
+                      border: '1px solid #e3e3e5'
+                    }}>
+                      <Text variant="headingMd" as="h3">
+                        Editing: {productTitle}
+                      </Text>
+                    </div>
+                  )}
                   <TextField
                     label="Title"
                     value={config.title || ""}
