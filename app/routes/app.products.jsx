@@ -243,6 +243,10 @@ export default function Products() {
         content: "Home",
         url: "/app",
       }}
+      primaryAction={{
+        content: "Bulk Editor",
+        onAction: () => navigate("/app/bulk-editor"),
+      }}
     >
       <Layout>
         <Layout.Section>

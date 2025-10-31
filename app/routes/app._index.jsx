@@ -182,6 +182,23 @@ export default function Index() {
             </Card>
           </Layout.Section>
           
+          <Layout.Section>
+            <Card>
+              <BlockStack gap="400">
+                <Text as="h2" variant="headingMd">
+                  🔧 Bulk Block Editor
+                </Text>
+                <Text variant="bodyMd" as="p">
+                  Edit the same customizer blocks across multiple products at once. Find all products using a specific block ID and update them together.
+                </Text>
+                <InlineStack>
+                  <Button onClick={() => navigate("/app/bulk-editor")}>
+                    Open Bulk Editor
+                  </Button>
+                </InlineStack>
+              </BlockStack>
+            </Card>
+          </Layout.Section>
         </Layout>
       </BlockStack>
       <div style={{
