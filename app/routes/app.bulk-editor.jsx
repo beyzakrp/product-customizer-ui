@@ -170,11 +170,23 @@ export default function BulkEditor() {
   const [blockType, setBlockType] = useState("");
   const [showEditor, setShowEditor] = useState(false);
   
-  // Block updates state
+  // Block updates state - comprehensive
   const [blockUpdates, setBlockUpdates] = useState({
     title: "",
     enabled: true,
-    pricing: { mode: "none", value: 0 }
+    pricing: { mode: "none", value: 0 },
+    // Picker specific
+    options: [],
+    isNested: false,
+    nested: [],
+    // Input specific
+    subtype: "text",
+    placeholder: "",
+    // Area specific
+    limits: { width: { min: 0, max: 1000 } },
+    hasInputSection: false,
+    inputSection: { title: "", placeholder: "" },
+    guide: { enabled: false, title: "", sections: [] }
   });
 
   useEffect(() => {
@@ -258,7 +270,19 @@ export default function BulkEditor() {
             setBlockUpdates({
               title: block.title || "",
               enabled: block.enabled ?? true,
-              pricing: block.pricing || { mode: "none", value: 0 }
+              pricing: block.pricing || { mode: "none", value: 0 },
+              // Picker specific
+              options: block.options || [],
+              isNested: block.isNested || false,
+              nested: block.nested || [],
+              // Input specific
+              subtype: block.subtype || "text",
+              placeholder: block.placeholder || "",
+              // Area specific
+              limits: block.limits || { width: { min: 0, max: 1000 } },
+              hasInputSection: block.hasInputSection || false,
+              inputSection: block.inputSection || { title: "", placeholder: "" },
+              guide: block.guide || { enabled: false, title: "", sections: [] }
             });
           }
         } catch (e) {
@@ -417,7 +441,27 @@ export default function BulkEditor() {
                   <Text variant="headingMd" as="h2">Step 3: Edit Block Properties</Text>
                   
                   <Banner tone="info">
-                    <p>Changes will be applied to all selected products.</p>
+                    <BlockStack gap="200">
+                      <Text variant="bodyMd" as="p">Changes will be applied to all selected products.</Text>
+                      <Text variant="bodySm" as="p" tone="subdued">
+                        Editing: <strong>{selectedBlockId}</strong> ({blockType})
+                      </Text>
+                      {blockType === "picker" && blockUpdates.options.length > 0 && (
+                        <Text variant="bodySm" as="p" tone="subdued">
+                          • {blockUpdates.options.length} option(s) configured
+                        </Text>
+                      )}
+                      {blockType === "picker" && blockUpdates.isNested && (
+                        <Text variant="bodySm" as="p" tone="subdued">
+                          • {(blockUpdates.nested || []).length} nested group(s) configured
+                        </Text>
+                      )}
+                      {blockType === "area" && blockUpdates.guide?.enabled && (
+                        <Text variant="bodySm" as="p" tone="subdued">
+                          • Measurement guide enabled with {(blockUpdates.guide?.sections || []).length} section(s)
+                        </Text>
+                      )}
+                    </BlockStack>
                   </Banner>
 
                   <TextField
@@ -432,40 +476,750 @@ export default function BulkEditor() {
                     onChange={(checked) => setBlockUpdates({ ...blockUpdates, enabled: checked })}
                   />
 
-                  {blockType !== "area" && (
-                    <BlockStack gap="300">
-                      <Text variant="headingSm" as="h3">Pricing</Text>
+                  {/* PICKER OPTIONS */}
+                  {blockType === "picker" && (
+                    <BlockStack gap="400">
+                      <Text variant="headingSm" as="h3">Picker Options</Text>
                       
-                      <InlineStack gap="300">
-                        <div style={{ width: 200 }}>
-                          <Select
-                            label="Pricing Mode"
-                            options={[
-                              { label: "None", value: "none" },
-                              { label: "Added", value: "added" },
-                              { label: "Multiplier", value: "multiplier" },
-                            ]}
-                            value={blockUpdates.pricing.mode}
+                      {blockUpdates.options.map((option, idx) => (
+                        <Card key={idx} sectioned>
+                          <BlockStack gap="300">
+                            <InlineStack align="space-between">
+                              <Text variant="bodyMd" as="h4">Option {idx + 1}</Text>
+                              <Button 
+                                size="slim" 
+                                variant="plain" 
+                                tone="critical"
+                                onClick={() => {
+                                  const newOptions = [...blockUpdates.options];
+                                  newOptions.splice(idx, 1);
+                                  setBlockUpdates({ ...blockUpdates, options: newOptions });
+                                }}
+                              >
+                                Remove
+                              </Button>
+                            </InlineStack>
+                            
+                            <InlineStack gap="200">
+                              <div style={{ flex: 1 }}>
+                                <TextField
+                                  label="Label"
+                                  value={option.label || ""}
+                                  onChange={(value) => {
+                                    const newOptions = [...blockUpdates.options];
+                                    newOptions[idx] = { ...newOptions[idx], label: value };
+                                    setBlockUpdates({ ...blockUpdates, options: newOptions });
+                                  }}
+                                />
+                              </div>
+                              <div style={{ flex: 1 }}>
+                                <TextField
+                                  label="Value"
+                                  value={option.value || ""}
+                                  onChange={(value) => {
+                                    const newOptions = [...blockUpdates.options];
+                                    newOptions[idx] = { ...newOptions[idx], value: value };
+                                    setBlockUpdates({ ...blockUpdates, options: newOptions });
+                                  }}
+                                />
+                              </div>
+                            </InlineStack>
+
+                            {/* Media Selection */}
+                            <Select
+                              label="Media Type"
+                              options={[
+                                { label: "Hex Color", value: "hex" },
+                                { label: "Image URL", value: "url" },
+                              ]}
+                              value={option.media?.type || "hex"}
+                              onChange={(value) => {
+                                const newOptions = [...blockUpdates.options];
+                                newOptions[idx] = { 
+                                  ...newOptions[idx], 
+                                  media: { 
+                                    type: value, 
+                                    [value]: value === "hex" ? "#000000" : "" 
+                                  } 
+                                };
+                                setBlockUpdates({ ...blockUpdates, options: newOptions });
+                              }}
+                            />
+
+                            {option.media?.type === "hex" ? (
+                              <TextField
+                                label="Hex Color"
+                                value={option.media.hex || "#000000"}
+                                onChange={(value) => {
+                                  const newOptions = [...blockUpdates.options];
+                                  newOptions[idx] = { 
+                                    ...newOptions[idx], 
+                                    media: { type: "hex", hex: value } 
+                                  };
+                                  setBlockUpdates({ ...blockUpdates, options: newOptions });
+                                }}
+                              />
+                            ) : (
+                              <TextField
+                                label="Image URL"
+                                value={option.media?.url || ""}
+                                onChange={(value) => {
+                                  const newOptions = [...blockUpdates.options];
+                                  newOptions[idx] = { 
+                                    ...newOptions[idx], 
+                                    media: { type: "url", url: value } 
+                                  };
+                                  setBlockUpdates({ ...blockUpdates, options: newOptions });
+                                }}
+                              />
+                            )}
+
+                            {/* Pricing for this option */}
+                            <Text variant="bodyMd" as="h5">Pricing</Text>
+                            <InlineStack gap="200">
+                              <div style={{ flex: 1 }}>
+                                <Select
+                                  label="Mode"
+                                  options={[
+                                    { label: "None", value: "none" },
+                                    { label: "Added", value: "added" },
+                                    { label: "Multiplier", value: "multiplier" },
+                                  ]}
+                                  value={option.pricing?.mode || "none"}
+                                  onChange={(value) => {
+                                    const newOptions = [...blockUpdates.options];
+                                    newOptions[idx] = { 
+                                      ...newOptions[idx], 
+                                      pricing: { ...(newOptions[idx].pricing || {}), mode: value } 
+                                    };
+                                    setBlockUpdates({ ...blockUpdates, options: newOptions });
+                                  }}
+                                />
+                              </div>
+                              <div style={{ flex: 1 }}>
+                                <TextField
+                                  label="Value"
+                                  type="number"
+                                  step="any"
+                                  value={String(option.pricing?.value || 0)}
+                                  onChange={(value) => {
+                                    const newOptions = [...blockUpdates.options];
+                                    newOptions[idx] = { 
+                                      ...newOptions[idx], 
+                                      pricing: { 
+                                        ...(newOptions[idx].pricing || {}), 
+                                        value: parseFloat(value) || 0 
+                                      } 
+                                    };
+                                    setBlockUpdates({ ...blockUpdates, options: newOptions });
+                                  }}
+                                />
+                              </div>
+                            </InlineStack>
+
+                            <Checkbox
+                              label="Show price to customer"
+                              checked={option.pricing?.show !== false}
+                              onChange={(checked) => {
+                                const newOptions = [...blockUpdates.options];
+                                newOptions[idx] = { 
+                                  ...newOptions[idx], 
+                                  pricing: { 
+                                    ...(newOptions[idx].pricing || {}), 
+                                    show: checked 
+                                  } 
+                                };
+                                setBlockUpdates({ ...blockUpdates, options: newOptions });
+                              }}
+                            />
+                          </BlockStack>
+                        </Card>
+                      ))}
+
+                      <Button 
+                        onClick={() => {
+                          setBlockUpdates({ 
+                            ...blockUpdates, 
+                            options: [
+                              ...blockUpdates.options, 
+                              { 
+                                label: "New Option", 
+                                value: `option-${blockUpdates.options.length + 1}`, 
+                                media: { type: "hex", hex: "#000000" },
+                                pricing: { mode: "none", value: 0, show: true }
+                              }
+                            ] 
+                          });
+                        }}
+                      >
+                        Add Option
+                      </Button>
+
+                      {/* Nested Picker Toggle */}
+                      <Checkbox
+                        label="Enable Nested Pickers (Conditional Options)"
+                        checked={blockUpdates.isNested}
+                        onChange={(checked) => setBlockUpdates({ ...blockUpdates, isNested: checked, nested: checked ? (blockUpdates.nested || []) : [] })}
+                      />
+
+                      {/* Nested Pickers Management */}
+                      {blockUpdates.isNested && (
+                        <BlockStack gap="400">
+                          <Text variant="headingSm" as="h3">Nested Pickers (Conditional Groups)</Text>
+                          
+                          {(blockUpdates.nested || []).map((nestedGroup, ngIdx) => (
+                            <Card key={ngIdx} sectioned>
+                              <BlockStack gap="300">
+                                <InlineStack align="space-between">
+                                  <Text variant="bodyMd" as="h4">Conditional Group {ngIdx + 1}</Text>
+                                  <Button 
+                                    size="slim" 
+                                    variant="plain" 
+                                    tone="critical"
+                                    onClick={() => {
+                                      const newNested = [...(blockUpdates.nested || [])];
+                                      newNested.splice(ngIdx, 1);
+                                      setBlockUpdates({ ...blockUpdates, nested: newNested });
+                                    }}
+                                  >
+                                    Remove Group
+                                  </Button>
+                                </InlineStack>
+
+                                <Select
+                                  label="Show When Parent Equals"
+                                  options={[
+                                    { label: "Select parent value", value: "" },
+                                    ...(blockUpdates.options || []).map(opt => ({
+                                      label: opt.label,
+                                      value: opt.value
+                                    }))
+                                  ]}
+                                  value={nestedGroup.when?.equals || ""}
+                                  onChange={(value) => {
+                                    const newNested = [...(blockUpdates.nested || [])];
+                                    newNested[ngIdx] = {
+                                      ...newNested[ngIdx],
+                                      when: {
+                                        parentId: blockUpdates.options?.[0]?.value || "",
+                                        equals: value
+                                      }
+                                    };
+                                    setBlockUpdates({ ...blockUpdates, nested: newNested });
+                                  }}
+                                />
+
+                                {/* Nested Items (Sub-pickers) */}
+                                <Text variant="bodyMd" as="h5">Sub-Pickers</Text>
+                                
+                                {(nestedGroup.items || []).map((item, itemIdx) => (
+                                  <Card key={itemIdx} sectioned>
+                                    <BlockStack gap="300">
+                                      <InlineStack align="space-between">
+                                        <Text variant="bodySm">Sub-Picker {itemIdx + 1}</Text>
+                                        <Button 
+                                          size="slim" 
+                                          variant="plain" 
+                                          tone="critical"
+                                          onClick={() => {
+                                            const newNested = [...(blockUpdates.nested || [])];
+                                            const newItems = [...(newNested[ngIdx].items || [])];
+                                            newItems.splice(itemIdx, 1);
+                                            newNested[ngIdx] = { ...newNested[ngIdx], items: newItems };
+                                            setBlockUpdates({ ...blockUpdates, nested: newNested });
+                                          }}
+                                        >
+                                          Remove
+                                        </Button>
+                                      </InlineStack>
+
+                                      <InlineStack gap="200">
+                                        <div style={{ flex: 1 }}>
+                                          <TextField
+                                            label="Title"
+                                            value={item.title || ""}
+                                            onChange={(value) => {
+                                              const newNested = [...(blockUpdates.nested || [])];
+                                              const newItems = [...(newNested[ngIdx].items || [])];
+                                              newItems[itemIdx] = { ...newItems[itemIdx], title: value };
+                                              newNested[ngIdx] = { ...newNested[ngIdx], items: newItems };
+                                              setBlockUpdates({ ...blockUpdates, nested: newNested });
+                                            }}
+                                          />
+                                        </div>
+                                        <div style={{ flex: 1 }}>
+                                          <TextField
+                                            label="ID"
+                                            value={item.id || ""}
+                                            onChange={(value) => {
+                                              const newNested = [...(blockUpdates.nested || [])];
+                                              const newItems = [...(newNested[ngIdx].items || [])];
+                                              newItems[itemIdx] = { ...newItems[itemIdx], id: value };
+                                              newNested[ngIdx] = { ...newNested[ngIdx], items: newItems };
+                                              setBlockUpdates({ ...blockUpdates, nested: newNested });
+                                            }}
+                                          />
+                                        </div>
+                                      </InlineStack>
+
+                                      <Checkbox
+                                        label="Enabled"
+                                        checked={item.enabled !== false}
+                                        onChange={(checked) => {
+                                          const newNested = [...(blockUpdates.nested || [])];
+                                          const newItems = [...(newNested[ngIdx].items || [])];
+                                          newItems[itemIdx] = { ...newItems[itemIdx], enabled: checked };
+                                          newNested[ngIdx] = { ...newNested[ngIdx], items: newItems };
+                                          setBlockUpdates({ ...blockUpdates, nested: newNested });
+                                        }}
+                                      />
+
+                                      {/* Sub-picker Options */}
+                                      <Text variant="bodySm" as="h6">Options</Text>
+                                      {(item.options || []).map((opt, optIdx) => (
+                                        <Card key={optIdx} sectioned subdued>
+                                          <BlockStack gap="200">
+                                            <InlineStack align="space-between">
+                                              <Text variant="bodySm">Option {optIdx + 1}</Text>
+                                              <Button 
+                                                size="slim" 
+                                                variant="plain" 
+                                                tone="critical"
+                                                onClick={() => {
+                                                  const newNested = [...(blockUpdates.nested || [])];
+                                                  const newItems = [...(newNested[ngIdx].items || [])];
+                                                  const newOptions = [...(newItems[itemIdx].options || [])];
+                                                  newOptions.splice(optIdx, 1);
+                                                  newItems[itemIdx] = { ...newItems[itemIdx], options: newOptions };
+                                                  newNested[ngIdx] = { ...newNested[ngIdx], items: newItems };
+                                                  setBlockUpdates({ ...blockUpdates, nested: newNested });
+                                                }}
+                                              >
+                                                Remove
+                                              </Button>
+                                            </InlineStack>
+
+                                            <InlineStack gap="200">
+                                              <TextField
+                                                label="Label"
+                                                value={opt.label || ""}
+                                                onChange={(value) => {
+                                                  const newNested = [...(blockUpdates.nested || [])];
+                                                  const newItems = [...(newNested[ngIdx].items || [])];
+                                                  const newOptions = [...(newItems[itemIdx].options || [])];
+                                                  newOptions[optIdx] = { ...newOptions[optIdx], label: value };
+                                                  newItems[itemIdx] = { ...newItems[itemIdx], options: newOptions };
+                                                  newNested[ngIdx] = { ...newNested[ngIdx], items: newItems };
+                                                  setBlockUpdates({ ...blockUpdates, nested: newNested });
+                                                }}
+                                              />
+                                              <TextField
+                                                label="Value"
+                                                value={opt.value || ""}
+                                                onChange={(value) => {
+                                                  const newNested = [...(blockUpdates.nested || [])];
+                                                  const newItems = [...(newNested[ngIdx].items || [])];
+                                                  const newOptions = [...(newItems[itemIdx].options || [])];
+                                                  newOptions[optIdx] = { ...newOptions[optIdx], value: value };
+                                                  newItems[itemIdx] = { ...newItems[itemIdx], options: newOptions };
+                                                  newNested[ngIdx] = { ...newNested[ngIdx], items: newItems };
+                                                  setBlockUpdates({ ...blockUpdates, nested: newNested });
+                                                }}
+                                              />
+                                            </InlineStack>
+                                          </BlockStack>
+                                        </Card>
+                                      ))}
+
+                                      <Button 
+                                        size="slim"
+                                        onClick={() => {
+                                          const newNested = [...(blockUpdates.nested || [])];
+                                          const newItems = [...(newNested[ngIdx].items || [])];
+                                          const newOptions = [...(newItems[itemIdx].options || [])];
+                                          newOptions.push({
+                                            label: "New Option",
+                                            value: `option-${newOptions.length + 1}`,
+                                            media: { type: "hex", hex: "#000000" }
+                                          });
+                                          newItems[itemIdx] = { ...newItems[itemIdx], options: newOptions };
+                                          newNested[ngIdx] = { ...newNested[ngIdx], items: newItems };
+                                          setBlockUpdates({ ...blockUpdates, nested: newNested });
+                                        }}
+                                      >
+                                        Add Option
+                                      </Button>
+                                    </BlockStack>
+                                  </Card>
+                                ))}
+
+                                <Button 
+                                  size="slim"
+                                  onClick={() => {
+                                    const newNested = [...(blockUpdates.nested || [])];
+                                    const newItems = [...(newNested[ngIdx].items || [])];
+                                    newItems.push({
+                                      id: `nested-picker-${Date.now()}`,
+                                      type: "picker",
+                                      title: "New Sub-Picker",
+                                      enabled: true,
+                                      options: []
+                                    });
+                                    newNested[ngIdx] = { ...newNested[ngIdx], items: newItems };
+                                    setBlockUpdates({ ...blockUpdates, nested: newNested });
+                                  }}
+                                >
+                                  Add Sub-Picker
+                                </Button>
+                              </BlockStack>
+                            </Card>
+                          ))}
+
+                          <Button 
+                            onClick={() => {
+                              const newNested = [...(blockUpdates.nested || [])];
+                              newNested.push({
+                                when: {
+                                  parentId: blockUpdates.options?.[0]?.value || "",
+                                  equals: ""
+                                },
+                                items: []
+                              });
+                              setBlockUpdates({ ...blockUpdates, nested: newNested });
+                            }}
+                          >
+                            Add Conditional Group
+                          </Button>
+                        </BlockStack>
+                      )}
+                    </BlockStack>
+                  )}
+
+                  {/* INPUT TYPE */}
+                  {blockType === "input" && (
+                    <BlockStack gap="300">
+                      <Text variant="headingSm" as="h3">Input Settings</Text>
+                      
+                      <Select
+                        label="Input Type"
+                        options={[
+                          { label: "Text", value: "text" },
+                          { label: "Number", value: "number" },
+                        ]}
+                        value={blockUpdates.subtype}
+                        onChange={(value) => setBlockUpdates({ ...blockUpdates, subtype: value })}
+                      />
+
+                      <TextField
+                        label="Placeholder"
+                        value={blockUpdates.placeholder}
+                        onChange={(value) => setBlockUpdates({ ...blockUpdates, placeholder: value })}
+                      />
+                    </BlockStack>
+                  )}
+
+                  {/* AREA SETTINGS */}
+                  {blockType === "area" && (
+                    <BlockStack gap="400">
+                      <Text variant="headingSm" as="h3">Area Settings</Text>
+                      
+                      <InlineStack gap="200">
+                        <div style={{ flex: 1 }}>
+                          <TextField
+                            label="Min Width (inches)"
+                            type="number"
+                            step="0.1"
+                            value={String(blockUpdates.limits?.width?.min || 0)}
                             onChange={(value) => setBlockUpdates({ 
                               ...blockUpdates, 
-                              pricing: { ...blockUpdates.pricing, mode: value } 
+                              limits: { 
+                                ...blockUpdates.limits, 
+                                width: { 
+                                  ...blockUpdates.limits.width, 
+                                  min: parseFloat(value) || 0 
+                                } 
+                              } 
                             })}
                           />
                         </div>
-                        
-                        <div style={{ width: 200 }}>
+                        <div style={{ flex: 1 }}>
                           <TextField
-                            label="Pricing Value"
+                            label="Max Width (inches)"
                             type="number"
-                            step="any"
-                            value={String(blockUpdates.pricing.value)}
+                            step="0.1"
+                            value={String(blockUpdates.limits?.width?.max || 1000)}
                             onChange={(value) => setBlockUpdates({ 
                               ...blockUpdates, 
-                              pricing: { ...blockUpdates.pricing, value: parseFloat(value) || 0 } 
+                              limits: { 
+                                ...blockUpdates.limits, 
+                                width: { 
+                                  ...blockUpdates.limits.width, 
+                                  max: parseFloat(value) || 1000 
+                                } 
+                              } 
                             })}
                           />
                         </div>
                       </InlineStack>
+
+                      <Checkbox
+                        label="Enable Additional Input Section"
+                        checked={blockUpdates.hasInputSection}
+                        onChange={(checked) => setBlockUpdates({ ...blockUpdates, hasInputSection: checked })}
+                      />
+
+                      {blockUpdates.hasInputSection && (
+                        <BlockStack gap="200">
+                          <TextField
+                            label="Input Section Title"
+                            value={blockUpdates.inputSection?.title || ""}
+                            onChange={(value) => setBlockUpdates({ 
+                              ...blockUpdates, 
+                              inputSection: { 
+                                ...blockUpdates.inputSection, 
+                                title: value 
+                              } 
+                            })}
+                          />
+                          <TextField
+                            label="Input Section Placeholder"
+                            value={blockUpdates.inputSection?.placeholder || ""}
+                            onChange={(value) => setBlockUpdates({ 
+                              ...blockUpdates, 
+                              inputSection: { 
+                                ...blockUpdates.inputSection, 
+                                placeholder: value 
+                              } 
+                            })}
+                          />
+                        </BlockStack>
+                      )}
+
+                      {/* Guide Section */}
+                      <Checkbox
+                        label="Enable Measurement Guide"
+                        checked={blockUpdates.guide?.enabled}
+                        onChange={(checked) => setBlockUpdates({ 
+                          ...blockUpdates, 
+                          guide: { 
+                            ...blockUpdates.guide, 
+                            enabled: checked,
+                            sections: blockUpdates.guide?.sections || []
+                          } 
+                        })}
+                      />
+
+                      {blockUpdates.guide?.enabled && (
+                        <BlockStack gap="400">
+                          <TextField
+                            label="Guide Title"
+                            value={blockUpdates.guide?.title || ""}
+                            onChange={(value) => setBlockUpdates({ 
+                              ...blockUpdates, 
+                              guide: { 
+                                ...blockUpdates.guide, 
+                                title: value 
+                              } 
+                            })}
+                          />
+
+                          {/* Guide Sections */}
+                          <Text variant="headingSm" as="h4">Guide Sections</Text>
+                          
+                          {(blockUpdates.guide?.sections || []).map((section, sIdx) => (
+                            <Card key={sIdx} sectioned>
+                              <BlockStack gap="300">
+                                <InlineStack align="space-between">
+                                  <Text variant="bodyMd" as="h5">Section {sIdx + 1}</Text>
+                                  <Button 
+                                    size="slim" 
+                                    variant="plain" 
+                                    tone="critical"
+                                    onClick={() => {
+                                      const newSections = [...(blockUpdates.guide?.sections || [])];
+                                      newSections.splice(sIdx, 1);
+                                      setBlockUpdates({ 
+                                        ...blockUpdates, 
+                                        guide: { 
+                                          ...blockUpdates.guide, 
+                                          sections: newSections 
+                                        } 
+                                      });
+                                    }}
+                                  >
+                                    Remove Section
+                                  </Button>
+                                </InlineStack>
+
+                                <TextField
+                                  label="Section Title"
+                                  value={section.title || ""}
+                                  onChange={(value) => {
+                                    const newSections = [...(blockUpdates.guide?.sections || [])];
+                                    newSections[sIdx] = { ...newSections[sIdx], title: value };
+                                    setBlockUpdates({ 
+                                      ...blockUpdates, 
+                                      guide: { 
+                                        ...blockUpdates.guide, 
+                                        sections: newSections 
+                                      } 
+                                    });
+                                  }}
+                                />
+
+                                <TextField
+                                  label="Description"
+                                  value={section.description || ""}
+                                  multiline={4}
+                                  onChange={(value) => {
+                                    const newSections = [...(blockUpdates.guide?.sections || [])];
+                                    newSections[sIdx] = { ...newSections[sIdx], description: value };
+                                    setBlockUpdates({ 
+                                      ...blockUpdates, 
+                                      guide: { 
+                                        ...blockUpdates.guide, 
+                                        sections: newSections 
+                                      } 
+                                    });
+                                  }}
+                                />
+
+                                {/* Photo Gallery */}
+                                <Text variant="bodyMd" as="h6">Photo Gallery</Text>
+                                
+                                {(section.photoGallery || []).map((photo, pIdx) => (
+                                  <Card key={pIdx} sectioned>
+                                    <BlockStack gap="200">
+                                      <InlineStack align="space-between">
+                                        <Text variant="bodySm">Photo {pIdx + 1}</Text>
+                                        <Button 
+                                          size="slim" 
+                                          variant="plain" 
+                                          tone="critical"
+                                          onClick={() => {
+                                            const newSections = [...(blockUpdates.guide?.sections || [])];
+                                            const newPhotos = [...(newSections[sIdx].photoGallery || [])];
+                                            newPhotos.splice(pIdx, 1);
+                                            newSections[sIdx] = { ...newSections[sIdx], photoGallery: newPhotos };
+                                            setBlockUpdates({ 
+                                              ...blockUpdates, 
+                                              guide: { 
+                                                ...blockUpdates.guide, 
+                                                sections: newSections 
+                                              } 
+                                            });
+                                          }}
+                                        >
+                                          Remove Photo
+                                        </Button>
+                                      </InlineStack>
+
+                                      <TextField
+                                        label="Image URL"
+                                        value={photo.url || ""}
+                                        onChange={(value) => {
+                                          const newSections = [...(blockUpdates.guide?.sections || [])];
+                                          const newPhotos = [...(newSections[sIdx].photoGallery || [])];
+                                          newPhotos[pIdx] = { ...newPhotos[pIdx], url: value };
+                                          newSections[sIdx] = { ...newSections[sIdx], photoGallery: newPhotos };
+                                          setBlockUpdates({ 
+                                            ...blockUpdates, 
+                                            guide: { 
+                                              ...blockUpdates.guide, 
+                                              sections: newSections 
+                                            } 
+                                          });
+                                        }}
+                                      />
+
+                                      <TextField
+                                        label="Alt Text"
+                                        value={photo.alt || ""}
+                                        onChange={(value) => {
+                                          const newSections = [...(blockUpdates.guide?.sections || [])];
+                                          const newPhotos = [...(newSections[sIdx].photoGallery || [])];
+                                          newPhotos[pIdx] = { ...newPhotos[pIdx], alt: value };
+                                          newSections[sIdx] = { ...newSections[sIdx], photoGallery: newPhotos };
+                                          setBlockUpdates({ 
+                                            ...blockUpdates, 
+                                            guide: { 
+                                              ...blockUpdates.guide, 
+                                              sections: newSections 
+                                            } 
+                                          });
+                                        }}
+                                      />
+
+                                      <TextField
+                                        label="Caption"
+                                        value={photo.caption || ""}
+                                        onChange={(value) => {
+                                          const newSections = [...(blockUpdates.guide?.sections || [])];
+                                          const newPhotos = [...(newSections[sIdx].photoGallery || [])];
+                                          newPhotos[pIdx] = { ...newPhotos[pIdx], caption: value };
+                                          newSections[sIdx] = { ...newSections[sIdx], photoGallery: newPhotos };
+                                          setBlockUpdates({ 
+                                            ...blockUpdates, 
+                                            guide: { 
+                                              ...blockUpdates.guide, 
+                                              sections: newSections 
+                                            } 
+                                          });
+                                        }}
+                                      />
+                                    </BlockStack>
+                                  </Card>
+                                ))}
+
+                                <Button 
+                                  size="slim"
+                                  onClick={() => {
+                                    const newSections = [...(blockUpdates.guide?.sections || [])];
+                                    const newPhotos = [...(newSections[sIdx].photoGallery || [])];
+                                    newPhotos.push({
+                                      id: `photo-${Date.now()}`,
+                                      url: "",
+                                      alt: "",
+                                      caption: ""
+                                    });
+                                    newSections[sIdx] = { ...newSections[sIdx], photoGallery: newPhotos };
+                                    setBlockUpdates({ 
+                                      ...blockUpdates, 
+                                      guide: { 
+                                        ...blockUpdates.guide, 
+                                        sections: newSections 
+                                      } 
+                                    });
+                                  }}
+                                >
+                                  Add Photo
+                                </Button>
+                              </BlockStack>
+                            </Card>
+                          ))}
+
+                          <Button 
+                            onClick={() => {
+                              const newSections = [...(blockUpdates.guide?.sections || [])];
+                              newSections.push({
+                                id: `section-${Date.now()}`,
+                                title: "",
+                                description: "",
+                                photoGallery: []
+                              });
+                              setBlockUpdates({ 
+                                ...blockUpdates, 
+                                guide: { 
+                                  ...blockUpdates.guide, 
+                                  sections: newSections 
+                                } 
+                              });
+                            }}
+                          >
+                            Add Guide Section
+                          </Button>
+                        </BlockStack>
+                      )}
                     </BlockStack>
                   )}
 
