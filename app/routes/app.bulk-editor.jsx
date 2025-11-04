@@ -58,6 +58,103 @@ export async function action({ request }) {
   const formData = await request.formData();
   const action = formData.get("action");
 
+  if (action === "bulkUpdateGeneralSettings") {
+    const productIds = JSON.parse(formData.get("productIds"));
+    const generalUpdates = JSON.parse(formData.get("updates"));
+
+    try {
+      const results = [];
+      
+      for (const productId of productIds) {
+        const productGid = `gid://shopify/Product/${productId}`;
+        
+        // Get current metafield
+        const getResponse = await admin.graphql(
+          `query {
+            product(id: "${productGid}") {
+              metafields(namespace: "custom", first: 10) {
+                edges {
+                  node {
+                    id
+                    key
+                    value
+                  }
+                }
+              }
+            }
+          }`
+        );
+        
+        const getData = await getResponse.json();
+        const metafields = getData.data.product.metafields.edges.map(e => e.node);
+        const optionsMetafield = metafields.find(m => m.key === "options");
+        
+        if (!optionsMetafield) {
+          results.push({ productId, success: false, error: "No customizer config found" });
+          continue;
+        }
+
+        // Parse and update config block
+        let config = JSON.parse(optionsMetafield.value);
+        const configIndex = config.findIndex(b => b.type === "config");
+        
+        if (configIndex === -1) {
+          results.push({ productId, success: false, error: "Config block not found" });
+          continue;
+        }
+
+        // Apply updates to config
+        config[configIndex] = { ...config[configIndex], ...generalUpdates };
+
+        // Save back
+        const mutation = `
+          mutation {
+            metafieldsSet(metafields: [{
+              namespace: "custom",
+              key: "options",
+              type: "json",
+              value: """${JSON.stringify(config)}""",
+              ownerId: "${productGid}"
+            }]) {
+              metafields {
+                id
+              }
+              userErrors {
+                field
+                message
+              }
+            }
+          }
+        `;
+
+        const updateResponse = await admin.graphql(mutation);
+        const updateData = await updateResponse.json();
+        
+        if (updateData.data.metafieldsSet.userErrors.length > 0) {
+          results.push({ 
+            productId, 
+            success: false, 
+            error: updateData.data.metafieldsSet.userErrors[0].message 
+          });
+        } else {
+          results.push({ productId, success: true });
+        }
+      }
+
+      const successCount = results.filter(r => r.success).length;
+      const failCount = results.length - successCount;
+
+      return json({ 
+        success: true, 
+        message: `${successCount} products updated successfully. ${failCount} failed.`,
+        results 
+      });
+    } catch (error) {
+      console.error("Bulk update error:", error);
+      return json({ success: false, error: error.message });
+    }
+  }
+
   if (action === "bulkUpdate") {
     const productIds = JSON.parse(formData.get("productIds"));
     const blockId = formData.get("blockId");
@@ -165,10 +262,20 @@ export default function BulkEditor() {
   const fetcher = useFetcher();
   const { showToast } = useOutletContext();
   
+  const [editMode, setEditMode] = useState("block"); // "block" or "general"
   const [selectedBlockId, setSelectedBlockId] = useState("");
   const [selectedProducts, setSelectedProducts] = useState([]);
   const [blockType, setBlockType] = useState("");
   const [showEditor, setShowEditor] = useState(false);
+  
+  // General Settings updates state
+  const [generalUpdates, setGeneralUpdates] = useState({
+    title: "",
+    enabled: true,
+    show_price: true,
+    currency: "USD",
+    unit_price: 0
+  });
   
   // Block updates state - comprehensive
   const [blockUpdates, setBlockUpdates] = useState({
@@ -179,6 +286,7 @@ export default function BulkEditor() {
     options: [],
     isNested: false,
     nested: [],
+    hasGuide: false,
     // Input specific
     subtype: "text",
     placeholder: "",
@@ -186,7 +294,10 @@ export default function BulkEditor() {
     limits: { width: { min: 0, max: 1000 } },
     hasInputSection: false,
     inputSection: { title: "", placeholder: "" },
-    guide: { enabled: false, title: "", sections: [] }
+    guide: { enabled: false, title: "", sections: [] },
+    isHasGuideImage: false,
+    guideImageUrl: "",
+    unit: "inch"
   });
 
   useEffect(() => {
@@ -275,6 +386,7 @@ export default function BulkEditor() {
               options: block.options || [],
               isNested: block.isNested || false,
               nested: block.nested || [],
+              hasGuide: block.hasGuide || false,
               // Input specific
               subtype: block.subtype || "text",
               placeholder: block.placeholder || "",
@@ -282,7 +394,10 @@ export default function BulkEditor() {
               limits: block.limits || { width: { min: 0, max: 1000 } },
               hasInputSection: block.hasInputSection || false,
               inputSection: block.inputSection || { title: "", placeholder: "" },
-              guide: block.guide || { enabled: false, title: "", sections: [] }
+              guide: block.guide || { enabled: false, title: "", sections: [] },
+              isHasGuideImage: block.isHasGuideImage || false,
+              guideImageUrl: block.guideImageUrl || "",
+              unit: block.unit || "inch"
             });
           }
         } catch (e) {
@@ -298,18 +413,47 @@ export default function BulkEditor() {
       return;
     }
 
-    fetcher.submit(
-      {
-        action: "bulkUpdate",
-        productIds: JSON.stringify(selectedProducts),
-        blockId: selectedBlockId,
-        updates: JSON.stringify(blockUpdates)
-      },
-      { method: "post" }
-    );
+    if (editMode === "general") {
+      fetcher.submit(
+        {
+          action: "bulkUpdateGeneralSettings",
+          productIds: JSON.stringify(selectedProducts),
+          updates: JSON.stringify(generalUpdates)
+        },
+        { method: "post" }
+      );
+    } else {
+      fetcher.submit(
+        {
+          action: "bulkUpdate",
+          productIds: JSON.stringify(selectedProducts),
+          blockId: selectedBlockId,
+          updates: JSON.stringify(blockUpdates)
+        },
+        { method: "post" }
+      );
+    }
   };
 
-  const rows = productsWithSelectedBlock.map((product) => {
+  // Get products that have customizer config (for general settings mode)
+  const productsWithConfig = useMemo(() => {
+    return products.filter(p => {
+      const optionsMetafield = p.metafields.edges
+        .map(e => e.node)
+        .find(m => m.key === "options");
+      return !!optionsMetafield;
+    });
+  }, [products]);
+
+  // Get products for product selection table
+  const productsForSelection = useMemo(() => {
+    if (editMode === "general") {
+      return productsWithConfig;
+    }
+    return productsWithSelectedBlock;
+  }, [editMode, productsWithConfig, productsWithSelectedBlock]);
+
+  const rows = productsForSelection.map((product) => {
     const numericId = product.id.split("/").pop();
     const isSelected = selectedProducts.includes(numericId);
     
@@ -333,7 +477,7 @@ export default function BulkEditor() {
   });
 
   const selectAllProducts = () => {
-    const allIds = productsWithSelectedBlock.map(p => p.id.split("/").pop());
+    const allIds = productsForSelection.map(p => p.id.split("/").pop());
     setSelectedProducts(allIds);
   };
 
@@ -343,8 +487,8 @@ export default function BulkEditor() {
 
   return (
     <Page 
-      title="Bulk Block Editor" 
-      subtitle="Edit same blocks across multiple products"
+      title="Bulk Editor" 
+      subtitle="Edit blocks or general settings across multiple products"
       backAction={{
         content: "Products",
         url: "/app/products",
@@ -353,58 +497,122 @@ export default function BulkEditor() {
       <Layout>
         <Layout.Section>
           <Banner tone="info">
-            <p>Select a block ID to see all products that use it, then edit them all at once.</p>
+            <p>Edit blocks or general settings across multiple products at once.</p>
           </Banner>
         </Layout.Section>
 
         <Layout.Section>
           <Card sectioned>
             <BlockStack gap="400">
-              <Text variant="headingMd" as="h2">Step 1: Select a Block ID</Text>
+              <Text variant="headingMd" as="h2">Step 1: Choose Edit Mode</Text>
               
-              {allBlocks.length === 0 ? (
-                <Banner tone="warning">
-                  <p>No customizer blocks found. Please configure products first.</p>
-                </Banner>
-              ) : (
-                <>
-                  <Select
-                    label="Block ID"
-                    options={[
-                      { label: "Select a block", value: "" },
-                      ...allBlocks.map(block => ({
-                        label: `${block.id} (${block.type}) - ${block.title} - Found in ${block.count} products`,
-                        value: block.id
-                      }))
-                    ]}
-                    value={selectedBlockId}
-                    onChange={(value) => {
-                      setSelectedBlockId(value);
-                      setSelectedProducts([]);
-                      setShowEditor(false);
-                    }}
-                  />
+              <Select
+                label="What do you want to edit?"
+                options={[
+                  { label: "Edit Specific Block", value: "block" },
+                  { label: "Edit General Settings", value: "general" },
+                ]}
+                value={editMode}
+                onChange={(value) => {
+                  setEditMode(value);
+                  setSelectedBlockId("");
+                  setSelectedProducts([]);
+                  setShowEditor(false);
+                }}
+              />
 
-                  {selectedBlockId && (
-                    <InlineStack align="space-between">
-                      <Text variant="bodyMd" as="p" tone="subdued">
-                        Found in {productsWithSelectedBlock.length} products
-                      </Text>
-                      <Button 
-                        variant="primary"
-                        onClick={() => setShowEditor(true)}
-                      >
-                        Continue to Edit
-                      </Button>
-                    </InlineStack>
+              {editMode === "block" && (
+                <>
+                  {allBlocks.length === 0 ? (
+                    <Banner tone="warning">
+                      <p>No customizer blocks found. Please configure products first.</p>
+                    </Banner>
+                  ) : (
+                    <>
+                      <Select
+                        label="Block ID"
+                        options={[
+                          { label: "Select a block", value: "" },
+                          ...allBlocks.map(block => ({
+                            label: `${block.id} (${block.type}) - ${block.title} - Found in ${block.count} products`,
+                            value: block.id
+                          }))
+                        ]}
+                        value={selectedBlockId}
+                        onChange={(value) => {
+                          setSelectedBlockId(value);
+                          setSelectedProducts([]);
+                          setShowEditor(false);
+                        }}
+                      />
+
+                      {selectedBlockId && (
+                        <InlineStack align="space-between">
+                          <Text variant="bodyMd" as="p" tone="subdued">
+                            Found in {productsWithSelectedBlock.length} products
+                          </Text>
+                          <Button 
+                            variant="primary"
+                            onClick={() => setShowEditor(true)}
+                          >
+                            Continue to Edit
+                          </Button>
+                        </InlineStack>
+                      )}
+                    </>
                   )}
+                </>
+              )}
+
+              {editMode === "general" && (
+                <>
+                  <Banner tone="success">
+                    <p>All products with customizer configuration will be shown for editing.</p>
+                  </Banner>
+                  <Button 
+                    variant="primary"
+                    onClick={() => {
+                      setShowEditor(true);
+                      // Load first product's general settings as template
+                      const firstProductWithConfig = products.find(p => {
+                        const optionsMetafield = p.metafields.edges
+                          .map(e => e.node)
+                          .find(m => m.key === "options");
+                        return !!optionsMetafield;
+                      });
+                      
+                      if (firstProductWithConfig) {
+                        try {
+                          const optionsMetafield = firstProductWithConfig.metafields.edges
+                            .map(e => e.node)
+                            .find(m => m.key === "options");
+                          const config = JSON.parse(optionsMetafield.value);
+                          const configBlock = config.find(b => b.type === "config");
+                          
+                          if (configBlock) {
+                            setGeneralUpdates({
+                              title: configBlock.title || "",
+                              enabled: configBlock.enabled ?? true,
+                              show_price: configBlock.show_price ?? true,
+                              currency: configBlock.currency || "USD",
+                              unit_price: configBlock.unit_price ?? 0
+                            });
+                          }
+                        } catch (e) {
+                          console.error("Error loading general settings:", e);
+                        }
+                      }
+                    }}
+                  >
+                    Continue to Edit General Settings
+                  </Button>
                 </>
               )}
             </BlockStack>
           </Card>
         </Layout.Section>
 
-        {selectedBlockId && showEditor && (
+        {((editMode === "block" && selectedBlockId) || editMode === "general") && showEditor && (
           <>
             <Layout.Section>
               <Card sectioned>
@@ -438,8 +646,95 @@ export default function BulkEditor() {
             <Layout.Section>
               <Card sectioned>
                 <BlockStack gap="400">
-                  <Text variant="headingMd" as="h2">Step 3: Edit Block Properties</Text>
+                  <Text variant="headingMd" as="h2">
+                    Step 3: {editMode === "general" ? "Edit General Settings" : "Edit Block Properties"}
+                  </Text>
                   
+                  {editMode === "general" ? (
+                    <BlockStack gap="400">
+                      <Banner tone="info">
+                        <p>These settings will be applied to the config block of all selected products.</p>
+                      </Banner>
+
+                      <TextField
+                        label="Customizer Title"
+                        value={generalUpdates.title}
+                        onChange={(value) => setGeneralUpdates({ ...generalUpdates, title: value })}
+                        helpText="The main title for your customizer"
+                      />
+
+                      <InlineStack gap="300">
+                        <Checkbox
+                          label="Customizer Active"
+                          checked={generalUpdates.enabled}
+                          onChange={(checked) => setGeneralUpdates({ ...generalUpdates, enabled: checked })}
+                        />
+                        
+                        <Checkbox
+                          label="Show Price"
+                          checked={generalUpdates.show_price}
+                          onChange={(checked) => setGeneralUpdates({ ...generalUpdates, show_price: checked })}
+                        />
+                      </InlineStack>
+
+                      <InlineStack gap="300">
+                        <div style={{ width: 200 }}>
+                          <TextField
+                            label="Currency"
+                            value={generalUpdates.currency}
+                            onChange={(value) => setGeneralUpdates({ ...generalUpdates, currency: value })}
+                            placeholder="USD"
+                          />
+                        </div>
+                        
+                        <div style={{ width: 200 }}>
+                          <TextField
+                            label="Unit Price (per inch)"
+                            type="number"
+                            step="0.01"
+                            value={String(generalUpdates.unit_price)}
+                            onChange={(value) => setGeneralUpdates({ 
+                              ...generalUpdates, 
+                              unit_price: parseFloat(value) || 0 
+                            })}
+                          />
+                        </div>
+                      </InlineStack>
+
+                      <Banner tone="warning">
+                        <BlockStack gap="200">
+                          <Text variant="headingSm">What will be updated:</Text>
+                          <Text variant="bodyMd" as="p">
+                            • Title: {generalUpdates.title || "(empty)"}
+                          </Text>
+                          <Text variant="bodyMd" as="p">
+                            • Active: {generalUpdates.enabled ? "Yes" : "No"}
+                          </Text>
+                          <Text variant="bodyMd" as="p">
+                            • Show Price: {generalUpdates.show_price ? "Yes" : "No"}
+                          </Text>
+                          <Text variant="bodyMd" as="p">
+                            • Currency: {generalUpdates.currency}
+                          </Text>
+                          <Text variant="bodyMd" as="p">
+                            • Unit Price: {generalUpdates.unit_price}
+                          </Text>
+                        </BlockStack>
+                      </Banner>
+
+                      <InlineStack align="end">
+                        <Button 
+                          variant="primary"
+                          onClick={handleBulkUpdate}
+                          loading={fetcher.state === "submitting"}
+                          disabled={selectedProducts.length === 0}
+                        >
+                          Apply Changes to {selectedProducts.length} Product(s)
+                        </Button>
+                      </InlineStack>
+                    </BlockStack>
+                  ) : (
+                    <BlockStack gap="400">
                   <Banner tone="info">
                     <BlockStack gap="200">
                       <Text variant="bodyMd" as="p">Changes will be applied to all selected products.</Text>
@@ -661,6 +956,184 @@ export default function BulkEditor() {
                         checked={blockUpdates.isNested}
                         onChange={(checked) => setBlockUpdates({ ...blockUpdates, isNested: checked, nested: checked ? (blockUpdates.nested || []) : [] })}
                       />
+
+                      {/* Picker Guide */}
+                      <Checkbox
+                        label="Enable Guide for this Picker"
+                        checked={blockUpdates.hasGuide || blockUpdates.guide?.enabled}
+                        onChange={(checked) => setBlockUpdates({ 
+                          ...blockUpdates, 
+                          hasGuide: checked,
+                          guide: { 
+                            ...(blockUpdates.guide || {}), 
+                            enabled: checked,
+                            title: blockUpdates.guide?.title || "",
+                            sections: blockUpdates.guide?.sections || []
+                          }
+                        })}
+                      />
+
+                      {/* Picker Guide Sections - Same as Area */}
+                      {(blockUpdates.hasGuide || blockUpdates.guide?.enabled) && (
+                        <BlockStack gap="300">
+                          <TextField
+                            label="Guide Title"
+                            value={blockUpdates.guide?.title || ""}
+                            onChange={(value) => setBlockUpdates({ 
+                              ...blockUpdates, 
+                              guide: { 
+                                ...(blockUpdates.guide || {}), 
+                                title: value 
+                              } 
+                            })}
+                          />
+
+                          <Text variant="headingSm" as="h4">Guide Sections</Text>
+                          
+                          {(blockUpdates.guide?.sections || []).map((section, sIdx) => (
+                            <Card key={sIdx} sectioned>
+                              <BlockStack gap="200">
+                                <InlineStack align="space-between">
+                                  <Text variant="bodyMd">Section {sIdx + 1}</Text>
+                                  <Button 
+                                    size="slim" 
+                                    variant="plain" 
+                                    tone="critical"
+                                    onClick={() => {
+                                      const newSections = [...(blockUpdates.guide?.sections || [])];
+                                      newSections.splice(sIdx, 1);
+                                      setBlockUpdates({ 
+                                        ...blockUpdates, 
+                                        guide: { 
+                                          ...(blockUpdates.guide || {}), 
+                                          sections: newSections 
+                                        } 
+                                      });
+                                    }}
+                                  >
+                                    Remove
+                                  </Button>
+                                </InlineStack>
+
+                                <TextField
+                                  label="Section Title"
+                                  value={section.title || ""}
+                                  onChange={(value) => {
+                                    const newSections = [...(blockUpdates.guide?.sections || [])];
+                                    newSections[sIdx] = { ...newSections[sIdx], title: value };
+                                    setBlockUpdates({ 
+                                      ...blockUpdates, 
+                                      guide: { 
+                                        ...(blockUpdates.guide || {}), 
+                                        sections: newSections 
+                                      } 
+                                    });
+                                  }}
+                                />
+
+                                <TextField
+                                  label="Description"
+                                  value={section.description || ""}
+                                  multiline={3}
+                                  onChange={(value) => {
+                                    const newSections = [...(blockUpdates.guide?.sections || [])];
+                                    newSections[sIdx] = { ...newSections[sIdx], description: value };
+                                    setBlockUpdates({ 
+                                      ...blockUpdates, 
+                                      guide: { 
+                                        ...(blockUpdates.guide || {}), 
+                                        sections: newSections 
+                                      } 
+                                    });
+                                  }}
+                                />
+
+                                <Text variant="bodySm">Photo Gallery</Text>
+                                {(section.photoGallery || []).map((photo, pIdx) => (
+                                  <InlineStack key={pIdx} gap="200">
+                                    <div style={{ flex: 1 }}>
+                                      <TextField
+                                        label={`Photo ${pIdx + 1} URL`}
+                                        labelHidden
+                                        value={photo.url || ""}
+                                        placeholder="Image URL"
+                                        onChange={(value) => {
+                                          const newSections = [...(blockUpdates.guide?.sections || [])];
+                                          const newPhotos = [...(newSections[sIdx].photoGallery || [])];
+                                          newPhotos[pIdx] = { ...newPhotos[pIdx], url: value };
+                                          newSections[sIdx] = { ...newSections[sIdx], photoGallery: newPhotos };
+                                          setBlockUpdates({ 
+                                            ...blockUpdates, 
+                                            guide: { 
+                                              ...(blockUpdates.guide || {}), 
+                                              sections: newSections 
+                                            } 
+                                          });
+                                        }}
+                                      />
+                                    </div>
+                                    <Button 
+                                      size="slim" 
+                                      variant="plain" 
+                                      tone="critical"
+                                      onClick={() => {
+                                        const newSections = [...(blockUpdates.guide?.sections || [])];
+                                        const newPhotos = [...(newSections[sIdx].photoGallery || [])];
+                                        newPhotos.splice(pIdx, 1);
+                                        newSections[sIdx] = { ...newSections[sIdx], photoGallery: newPhotos };
+                                        setBlockUpdates({ 
+                                          ...blockUpdates, 
+                                          guide: { 
+                                            ...(blockUpdates.guide || {}), 
+                                            sections: newSections 
+                                          } 
+                                        });
+                                      }}
+                                    >
+                                      Remove
+                                    </Button>
+                                  </InlineStack>
+                                ))}
+
+                                <Button 
+                                  size="slim"
+                                  onClick={() => {
+                                    const newSections = [...(blockUpdates.guide?.sections || [])];
+                                    const newPhotos = [...(newSections[sIdx].photoGallery || [])];
+                                    newPhotos.push({ id: `photo-${Date.now()}`, url: "", alt: "", caption: "" });
+                                    newSections[sIdx] = { ...newSections[sIdx], photoGallery: newPhotos };
+                                    setBlockUpdates({ 
+                                      ...blockUpdates, 
+                                      guide: { 
+                                        ...(blockUpdates.guide || {}), 
+                                        sections: newSections 
+                                      } 
+                                    });
+                                  }}
+                                >
+                                  Add Photo
+                                </Button>
+                              </BlockStack>
+                            </Card>
+                          ))}
+
+                          <Button 
+                            onClick={() => {
+                              const newSections = [...(blockUpdates.guide?.sections || [])];
+                              newSections.push({ id: `section-${Date.now()}`, title: "", description: "", photoGallery: [] });
+                              setBlockUpdates({ 
+                                ...blockUpdates, 
+                                guide: { 
+                                  ...(blockUpdates.guide || {}), 
+                                  sections: newSections 
+                                } 
+                              });
+                            }}
+                          >
+                            Add Guide Section
+                          </Button>
+                        </BlockStack>
+                      )}
 
                       {/* Nested Pickers Management */}
                       {blockUpdates.isNested && (
@@ -1009,6 +1482,39 @@ export default function BulkEditor() {
                         })}
                       />
 
+                      {/* Guide Image */}
+                      <Checkbox
+                        label="Enable Guide Image"
+                        checked={blockUpdates.isHasGuideImage}
+                        onChange={(checked) => setBlockUpdates({ 
+                          ...blockUpdates, 
+                          isHasGuideImage: checked
+                        })}
+                      />
+
+                      {blockUpdates.isHasGuideImage && (
+                        <TextField
+                          label="Guide Image URL"
+                          value={blockUpdates.guideImageUrl || ""}
+                          onChange={(value) => setBlockUpdates({ 
+                            ...blockUpdates, 
+                            guideImageUrl: value 
+                          })}
+                          placeholder="https://example.com/guide-image.jpg"
+                        />
+                      )}
+
+                      {/* Unit Field */}
+                      <TextField
+                        label="Unit of Measurement"
+                        value={blockUpdates.unit || "inch"}
+                        onChange={(value) => setBlockUpdates({ 
+                          ...blockUpdates, 
+                          unit: value 
+                        })}
+                        helpText="e.g., inch, cm, m"
+                      />
+
                       {blockUpdates.guide?.enabled && (
                         <BlockStack gap="400">
                           <TextField
@@ -1233,6 +1739,8 @@ export default function BulkEditor() {
                       Apply Changes to {selectedProducts.length} Product(s)
                     </Button>
                   </InlineStack>
+                    </BlockStack>
+                  )}
                 </BlockStack>
               </Card>
             </Layout.Section>
