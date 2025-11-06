@@ -62,6 +62,7 @@ export async function action({ request }) {
     const productIds = JSON.parse(formData.get("productIds"));
     const blockToAdd = JSON.parse(formData.get("blockToAdd"));
     const sourceProductId = formData.get("sourceProductId");
+    const position = formData.get("position"); // "end", "start", or number index
 
     try {
       const results = [];
@@ -110,8 +111,30 @@ export async function action({ request }) {
           continue;
         }
 
-        // Add block to config (before the last item or at the end)
-        config.push(blockToAdd);
+        // Determine insertion position
+        const configIndex = config.findIndex(b => b.type === "config");
+        let insertIndex;
+        
+        if (position === "start") {
+          // Insert right after config block (or at position 1)
+          insertIndex = configIndex >= 0 ? configIndex + 1 : 1;
+        } else if (position === "end") {
+          // Insert at the end
+          insertIndex = config.length;
+        } else {
+          // Insert at specific position (position is 1-indexed for user, convert to 0-indexed)
+          const targetIndex = parseInt(position, 10);
+          if (!isNaN(targetIndex) && targetIndex > 0) {
+            // Calculate actual index (skip config block in counting)
+            const nonConfigBlocks = config.filter((b, idx) => b.type !== "config" && idx < targetIndex);
+            insertIndex = configIndex >= 0 ? configIndex + 1 + Math.min(targetIndex - 1, nonConfigBlocks.length) : targetIndex;
+          } else {
+            insertIndex = config.length; // Default to end
+          }
+        }
+
+        // Insert block at determined position
+        config.splice(insertIndex, 0, blockToAdd);
 
         // Update step_order in config block
         const configIndex = config.findIndex(b => b.type === "config");
@@ -394,6 +417,7 @@ export default function BulkEditor() {
   // For adding blocks
   const [sourceProductId, setSourceProductId] = useState("");
   const [blockToAdd, setBlockToAdd] = useState(null);
+  const [blockPosition, setBlockPosition] = useState("end"); // "start", "end", or number
   
   // Block updates state - comprehensive
   const [blockUpdates, setBlockUpdates] = useState({
@@ -541,7 +565,8 @@ export default function BulkEditor() {
           action: "bulkAddBlock",
           productIds: JSON.stringify(selectedProducts),
           blockToAdd: JSON.stringify(blockToAdd),
-          sourceProductId: sourceProductId
+          sourceProductId: sourceProductId,
+          position: blockPosition
         },
         { method: "post" }
       );
@@ -656,6 +681,7 @@ export default function BulkEditor() {
                   setShowEditor(false);
                   setSourceProductId("");
                   setBlockToAdd(null);
+                  setBlockPosition("end"); // Reset position
                 }}
               />
 
@@ -936,8 +962,57 @@ export default function BulkEditor() {
                         </BlockStack>
                       </Banner>
 
+                      {/* Position Selector */}
+                      <Card sectioned>
+                        <BlockStack gap="300">
+                          <Text variant="headingSm">Block Position</Text>
+                          <Text variant="bodyMd" tone="subdued">
+                            Choose where to insert this block in the configuration
+                          </Text>
+                          
+                          <Select
+                            label="Insert Position"
+                            options={[
+                              { label: "At the beginning (after General Settings)", value: "start" },
+                              { label: "At the end", value: "end" },
+                              { label: "At specific position (1, 2, 3, ...)", value: "custom" }
+                            ]}
+                            value={blockPosition === "start" || blockPosition === "end" ? blockPosition : "custom"}
+                            onChange={(value) => {
+                              if (value === "custom") {
+                                setBlockPosition("1");
+                              } else {
+                                setBlockPosition(value);
+                              }
+                            }}
+                          />
+
+                          {blockPosition !== "start" && blockPosition !== "end" && (
+                            <TextField
+                              label="Position Number"
+                              type="number"
+                              min="1"
+                              value={blockPosition}
+                              onChange={(value) => setBlockPosition(value)}
+                              helpText="1 = first block (after General Settings), 2 = second block, etc."
+                            />
+                          )}
+
+                          <Banner tone="info">
+                            <BlockStack gap="100">
+                              <Text variant="bodySm">Current selection:</Text>
+                              {blockPosition === "start" && <Text variant="bodySm">• Block will be inserted at the <strong>beginning</strong></Text>}
+                              {blockPosition === "end" && <Text variant="bodySm">• Block will be inserted at the <strong>end</strong></Text>}
+                              {blockPosition !== "start" && blockPosition !== "end" && (
+                                <Text variant="bodySm">• Block will be inserted at position <strong>#{blockPosition}</strong></Text>
+                              )}
+                            </BlockStack>
+                          </Banner>
+                        </BlockStack>
+                      </Card>
+
                       <Banner tone="info">
-                        <p>The block will be added to the end of each product's configuration. Products that already have a block with this ID will be skipped.</p>
+                        <p>Products that already have a block with this ID will be skipped.</p>
                       </Banner>
 
                       <Card sectioned>
