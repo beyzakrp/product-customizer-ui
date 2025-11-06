@@ -58,6 +58,120 @@ export async function action({ request }) {
   const formData = await request.formData();
   const action = formData.get("action");
 
+  if (action === "bulkAddBlock") {
+    const productIds = JSON.parse(formData.get("productIds"));
+    const blockToAdd = JSON.parse(formData.get("blockToAdd"));
+    const sourceProductId = formData.get("sourceProductId");
+
+    try {
+      const results = [];
+      
+      for (const productId of productIds) {
+        // Skip source product
+        if (productId === sourceProductId) {
+          results.push({ productId, success: true, skipped: true });
+          continue;
+        }
+
+        const productGid = `gid://shopify/Product/${productId}`;
+        
+        // Get current metafield
+        const getResponse = await admin.graphql(
+          `query {
+            product(id: "${productGid}") {
+              metafields(namespace: "custom", first: 10) {
+                edges {
+                  node {
+                    id
+                    key
+                    value
+                  }
+                }
+              }
+            }
+          }`
+        );
+        
+        const getData = await getResponse.json();
+        const metafields = getData.data.product.metafields.edges.map(e => e.node);
+        const optionsMetafield = metafields.find(m => m.key === "options");
+        
+        if (!optionsMetafield) {
+          results.push({ productId, success: false, error: "No customizer config found" });
+          continue;
+        }
+
+        // Parse and check if block already exists
+        let config = JSON.parse(optionsMetafield.value);
+        const existingBlockIndex = config.findIndex(b => b.id === blockToAdd.id);
+        
+        if (existingBlockIndex !== -1) {
+          results.push({ productId, success: false, error: "Block with same ID already exists" });
+          continue;
+        }
+
+        // Add block to config (before the last item or at the end)
+        config.push(blockToAdd);
+
+        // Update step_order in config block
+        const configIndex = config.findIndex(b => b.type === "config");
+        if (configIndex !== -1) {
+          const newStepOrder = config
+            .filter(b => b.type !== "config" && b.id)
+            .map(b => b.id);
+          config[configIndex] = { ...config[configIndex], step_order: newStepOrder };
+        }
+
+        // Save back
+        const mutation = `
+          mutation {
+            metafieldsSet(metafields: [{
+              namespace: "custom",
+              key: "options",
+              type: "json",
+              value: """${JSON.stringify(config)}""",
+              ownerId: "${productGid}"
+            }]) {
+              metafields {
+                id
+              }
+              userErrors {
+                field
+                message
+              }
+            }
+          }
+        `;
+
+        const updateResponse = await admin.graphql(mutation);
+        const updateData = await updateResponse.json();
+        
+        if (updateData.data.metafieldsSet.userErrors.length > 0) {
+          results.push({ 
+            productId, 
+            success: false, 
+            error: updateData.data.metafieldsSet.userErrors[0].message 
+          });
+        } else {
+          results.push({ productId, success: true });
+        }
+      }
+
+      const successCount = results.filter(r => r.success && !r.skipped).length;
+      const failCount = results.filter(r => !r.success).length;
+      const skippedCount = results.filter(r => r.skipped).length;
+
+      return json({ 
+        success: true, 
+        message: `${successCount} products updated, ${skippedCount} skipped (source), ${failCount} failed.`,
+        results 
+      });
+    } catch (error) {
+      console.error("Bulk add block error:", error);
+      return json({ success: false, error: error.message });
+    }
+  }
+
   if (action === "bulkUpdateGeneralSettings") {
     const productIds = JSON.parse(formData.get("productIds"));
     const generalUpdates = JSON.parse(formData.get("updates"));
@@ -262,7 +376,7 @@ export default function BulkEditor() {
   const fetcher = useFetcher();
   const { showToast } = useOutletContext();
   
-  const [editMode, setEditMode] = useState("block"); // "block" or "general"
+  const [editMode, setEditMode] = useState("block"); // "block", "general", or "addBlock"
   const [selectedBlockId, setSelectedBlockId] = useState("");
   const [selectedProducts, setSelectedProducts] = useState([]);
   const [blockType, setBlockType] = useState("");
@@ -276,6 +390,10 @@ export default function BulkEditor() {
     currency: "USD",
     unit_price: 0
   });
+  
+  // For adding blocks
+  const [sourceProductId, setSourceProductId] = useState("");
+  const [blockToAdd, setBlockToAdd] = useState(null);
   
   // Block updates state - comprehensive
   const [blockUpdates, setBlockUpdates] = useState({
@@ -413,7 +531,21 @@ export default function BulkEditor() {
       return;
     }
 
-    if (editMode === "general") {
+    if (editMode === "addBlock") {
+      if (!blockToAdd) {
+        showToast("Please select a block to add", true);
+        return;
+      }
+      fetcher.submit(
+        {
+          action: "bulkAddBlock",
+          productIds: JSON.stringify(selectedProducts),
+          blockToAdd: JSON.stringify(blockToAdd),
+          sourceProductId: sourceProductId
+        },
+        { method: "post" }
+      );
+    } else if (editMode === "general") {
       fetcher.submit(
         {
           action: "bulkUpdateGeneralSettings",
@@ -449,9 +581,12 @@ export default function BulkEditor() {
   const productsForSelection = useMemo(() => {
     if (editMode === "general") {
       return productsWithConfig;
+    } else if (editMode === "addBlock") {
+      // Show all products with config except source product
+      return productsWithConfig.filter(p => p.id.split("/").pop() !== sourceProductId);
     }
     return productsWithSelectedBlock;
-  }, [editMode, productsWithConfig, productsWithSelectedBlock]);
+  }, [editMode, productsWithConfig, productsWithSelectedBlock, sourceProductId]);
 
   const rows = productsForSelection.map((product) => {
     const numericId = product.id.split("/").pop();
@@ -511,6 +646,7 @@ export default function BulkEditor() {
                 options={[
                   { label: "Edit Specific Block", value: "block" },
                   { label: "Edit General Settings", value: "general" },
+                  { label: "Add Block to Products", value: "addBlock" },
                 ]}
                 value={editMode}
                 onChange={(value) => {
@@ -518,6 +654,8 @@ export default function BulkEditor() {
                   setSelectedBlockId("");
                   setSelectedProducts([]);
                   setShowEditor(false);
+                  setSourceProductId("");
+                  setBlockToAdd(null);
                 }}
               />
 
@@ -608,11 +746,124 @@ export default function BulkEditor() {
                   </Button>
                 </>
               )}
+
+              {editMode === "addBlock" && (
+                <>
+                  <Banner tone="info">
+                    <p>Select a source product and block ID to copy it to other products.</p>
+                  </Banner>
+
+                  <Select
+                    label="Source Product"
+                    options={[
+                      { label: "Select a product", value: "" },
+                      ...products
+                        .filter(p => p.metafields.edges.some(e => e.node.key === "options"))
+                        .map(p => ({
+                          label: p.title,
+                          value: p.id.split("/").pop()
+                        }))
+                    ]}
+                    value={sourceProductId}
+                    onChange={(value) => {
+                      setSourceProductId(value);
+                      setBlockToAdd(null);
+                      setSelectedProducts([]);
+                      setShowEditor(false);
+                    }}
+                  />
+
+                  {sourceProductId && (
+                    <>
+                      <Select
+                        label="Block to Copy"
+                        options={[
+                          { label: "Select a block", value: "" },
+                          ...(() => {
+                            const product = products.find(p => p.id.split("/").pop() === sourceProductId);
+                            if (!product) return [];
+                            
+                            const optionsMetafield = product.metafields.edges
+                              .map(e => e.node)
+                              .find(m => m.key === "options");
+                            
+                            if (!optionsMetafield) return [];
+                            
+                            try {
+                              const config = JSON.parse(optionsMetafield.value);
+                              return config
+                                .filter(b => b.type !== "config" && b.id)
+                                .map(b => ({
+                                  label: `${b.id} (${b.type}) - ${b.title || "Untitled"}`,
+                                  value: b.id
+                                }));
+                            } catch (e) {
+                              return [];
+                            }
+                          })()
+                        ]}
+                        value={blockToAdd?.id || ""}
+                        onChange={(value) => {
+                          const product = products.find(p => p.id.split("/").pop() === sourceProductId);
+                          if (!product) return;
+                          
+                          const optionsMetafield = product.metafields.edges
+                            .map(e => e.node)
+                            .find(m => m.key === "options");
+                          
+                          if (!optionsMetafield) return;
+                          
+                          try {
+                            const config = JSON.parse(optionsMetafield.value);
+                            const block = config.find(b => b.id === value);
+                            if (block) {
+                              setBlockToAdd(block);
+                            }
+                          } catch (e) {
+                            console.error("Error loading block:", e);
+                          }
+                        }}
+                      />
+
+                      {blockToAdd && (
+                        <>
+                          <Banner tone="success">
+                            <BlockStack gap="200">
+                              <Text variant="bodyMd">Block ready to copy:</Text>
+                              <Text variant="bodySm" as="p">
+                                • ID: <strong>{blockToAdd.id}</strong>
+                              </Text>
+                              <Text variant="bodySm" as="p">
+                                • Type: <strong>{blockToAdd.type}</strong>
+                              </Text>
+                              <Text variant="bodySm" as="p">
+                                • Title: <strong>{blockToAdd.title || "Untitled"}</strong>
+                              </Text>
+                              {blockToAdd.type === "picker" && blockToAdd.options && (
+                                <Text variant="bodySm" as="p">
+                                  • Options: <strong>{blockToAdd.options.length}</strong>
+                                </Text>
+                              )}
+                            </BlockStack>
+                          </Banner>
+                          
+                          <Button 
+                            variant="primary"
+                            onClick={() => setShowEditor(true)}
+                          >
+                            Continue to Select Products
+                          </Button>
+                        </>
+                      )}
+                    </>
+                  )}
+                </>
+              )}
             </BlockStack>
           </Card>
         </Layout.Section>
 
-        {((editMode === "block" && selectedBlockId) || editMode === "general") && showEditor && (
+        {((editMode === "block" && selectedBlockId) || editMode === "general" || (editMode === "addBlock" && blockToAdd)) && showEditor && (
           <>
             <Layout.Section>
               <Card sectioned>
@@ -647,10 +898,80 @@ export default function BulkEditor() {
               <Card sectioned>
                 <BlockStack gap="400">
                   <Text variant="headingMd" as="h2">
-                    Step 3: {editMode === "general" ? "Edit General Settings" : "Edit Block Properties"}
+                    Step 3: {editMode === "general" ? "Edit General Settings" : editMode === "addBlock" ? "Confirm Block Addition" : "Edit Block Properties"}
                   </Text>
                   
-                  {editMode === "general" ? (
+                  {editMode === "addBlock" ? (
+                    <BlockStack gap="400">
+                      <Banner tone="warning">
+                        <BlockStack gap="200">
+                          <Text variant="headingSm">You are about to add this block:</Text>
+                          <Text variant="bodyMd" as="p">
+                            • ID: <strong>{blockToAdd?.id}</strong>
+                          </Text>
+                          <Text variant="bodyMd" as="p">
+                            • Type: <strong>{blockToAdd?.type}</strong>
+                          </Text>
+                          <Text variant="bodyMd" as="p">
+                            • Title: <strong>{blockToAdd?.title || "Untitled"}</strong>
+                          </Text>
+                          <Text variant="bodyMd" as="p">
+                            • To: <strong>{selectedProducts.length} product(s)</strong>
+                          </Text>
+                          {blockToAdd?.type === "picker" && blockToAdd?.options && (
+                            <Text variant="bodySm" as="p" tone="subdued">
+                              • With {blockToAdd.options.length} option(s)
+                            </Text>
+                          )}
+                          {blockToAdd?.isNested && (
+                            <Text variant="bodySm" as="p" tone="subdued">
+                              • Includes nested pickers
+                            </Text>
+                          )}
+                          {(blockToAdd?.hasGuide || blockToAdd?.guide?.enabled) && (
+                            <Text variant="bodySm" as="p" tone="subdued">
+                              • Includes guide sections
+                            </Text>
+                          )}
+                        </BlockStack>
+                      </Banner>
+
+                      <Banner tone="info">
+                        <p>The block will be added to the end of each product's configuration. Products that already have a block with this ID will be skipped.</p>
+                      </Banner>
+
+                      <Card sectioned>
+                        <BlockStack gap="200">
+                          <Text variant="headingSm">Block Preview (JSON)</Text>
+                          <div style={{ 
+                            maxHeight: '300px', 
+                            overflow: 'auto', 
+                            background: '#f6f6f7', 
+                            padding: '12px',
+                            borderRadius: '8px',
+                            fontFamily: 'monospace',
+                            fontSize: '12px'
+                          }}>
+                            <pre style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
+                              {JSON.stringify(blockToAdd, null, 2)}
+                            </pre>
+                          </div>
+                        </BlockStack>
+                      </Card>
+
+                      <InlineStack align="end">
+                        <Button 
+                          variant="primary"
+                          onClick={handleBulkUpdate}
+                          loading={fetcher.state === "submitting"}
+                          disabled={selectedProducts.length === 0}
+                          tone="critical"
+                        >
+                          Add Block to {selectedProducts.length} Product(s)
+                        </Button>
+                      </InlineStack>
+                    </BlockStack>
+                  ) : editMode === "general" ? (
                     <BlockStack gap="400">
                       <Banner tone="info">
                         <p>These settings will be applied to the config block of all selected products.</p>
