@@ -136,8 +136,7 @@ export async function action({ request }) {
         // Insert block at determined position
         config.splice(insertIndex, 0, blockToAdd);
 
-        // Update step_order in config block
-        const configIndex = config.findIndex(b => b.type === "config");
+        // Update step_order in config block (reuse configIndex from above)
         if (configIndex !== -1) {
           const newStepOrder = config
             .filter(b => b.type !== "config" && b.id)
