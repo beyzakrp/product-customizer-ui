@@ -433,6 +433,7 @@ export default function BulkEditor() {
     placeholder: "",
     // Area specific
     limits: { width: { min: 0, max: 1000 } },
+    widthPlaceholder: "Enter width",
     hasInputSection: false,
     inputSection: { title: "", placeholder: "" },
     guide: { enabled: false, title: "", sections: [] },
@@ -533,6 +534,7 @@ export default function BulkEditor() {
               placeholder: block.placeholder || "",
               // Area specific
               limits: block.limits || { width: { min: 0, max: 1000 } },
+              widthPlaceholder: block.widthPlaceholder || "Enter width",
               hasInputSection: block.hasInputSection || false,
               inputSection: block.inputSection || { title: "", placeholder: "" },
               guide: block.guide || { enabled: false, title: "", sections: [] },
@@ -1829,6 +1831,16 @@ export default function BulkEditor() {
                           />
                         </div>
                       </InlineStack>
+
+                      <TextField
+                        label="Width Input Placeholder"
+                        value={blockUpdates.widthPlaceholder || ""}
+                        onChange={(value) => setBlockUpdates({ 
+                          ...blockUpdates, 
+                          widthPlaceholder: value 
+                        })}
+                        helpText="Placeholder text shown in the width input field (e.g., 'Enter width')"
+                      />
 
                       <Checkbox
                         label="Enable Additional Input Section"

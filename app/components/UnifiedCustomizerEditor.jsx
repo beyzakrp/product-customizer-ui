@@ -98,6 +98,7 @@ function createDefaultBlock(type) {
       limits: {
         width: { min: 20 },
       },
+      widthPlaceholder: "Enter width",
       pricing: { mode: "none", value: 0 },
       hasGuide: false,
       guide: { enabled: false, title: "", sections: [] },
@@ -241,6 +242,7 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
                 max={block.limits?.width?.max || 1000}
                 value={String(preview[block.id]?.width ?? '')}
                 onChange={(v) => setPreview(p => ({ ...p, [block.id]: { ...(p[block.id] || {}), width: v } }))}
+                placeholder={block.widthPlaceholder || "Enter width"}
               />
             )}
           </div>
@@ -1596,6 +1598,12 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
                         />
                             </div>
                           
+                          <TextField
+                            label="Width Input Placeholder"
+                            value={block.widthPlaceholder || ""}
+                            onChange={(v) => updateBlock(idx, { widthPlaceholder: v })}
+                            helpText="Placeholder text shown in the width input field"
+                          />
 
                           {/* Has Guide Section Checkbox */}
                           <Checkbox
@@ -1944,6 +1952,7 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
                                 min={block.limits?.width?.min || 0}
                                 value={String(preview[block.id]?.width ?? '')}
                                 onChange={(v)=> setPreview((p)=> ({ ...p, [block.id]: { ...(p[block.id]||{}), width: v } }))}
+                                placeholder={block.widthPlaceholder || "Enter width"}
                                 error={(() => {
                                   const width = parseFloat(preview[block.id]?.width);
                                   if (width && block.limits?.width?.min && width < block.limits.width.min) {
