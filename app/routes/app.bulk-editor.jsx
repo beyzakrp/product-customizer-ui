@@ -434,6 +434,7 @@ export default function BulkEditor() {
     // Area specific
     limits: { width: { min: 0, max: 1000 } },
     widthPlaceholder: "Enter width",
+    heightPlaceholder: "Enter height",
     hasInputSection: false,
     inputSection: { title: "", placeholder: "" },
     guide: { enabled: false, title: "", sections: [] },
@@ -535,6 +536,7 @@ export default function BulkEditor() {
               // Area specific
               limits: block.limits || { width: { min: 0, max: 1000 } },
               widthPlaceholder: block.widthPlaceholder || "Enter width",
+              heightPlaceholder: block.heightPlaceholder || "Enter height",
               hasInputSection: block.hasInputSection || false,
               inputSection: block.inputSection || { title: "", placeholder: "" },
               guide: block.guide || { enabled: false, title: "", sections: [] },
@@ -1840,6 +1842,16 @@ export default function BulkEditor() {
                           widthPlaceholder: value 
                         })}
                         helpText="Placeholder text shown in the width input field (e.g., 'Enter width')"
+                      />
+
+                      <TextField
+                        label="Height Input Placeholder"
+                        value={blockUpdates.heightPlaceholder || ""}
+                        onChange={(value) => setBlockUpdates({ 
+                          ...blockUpdates, 
+                          heightPlaceholder: value 
+                        })}
+                        helpText="Placeholder text shown in the height input field (e.g., 'Enter height')"
                       />
 
                       <Checkbox

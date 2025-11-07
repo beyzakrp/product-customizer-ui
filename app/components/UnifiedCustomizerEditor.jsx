@@ -99,6 +99,7 @@ function createDefaultBlock(type) {
         width: { min: 20 },
       },
       widthPlaceholder: "Enter width",
+      heightPlaceholder: "Enter height",
       pricing: { mode: "none", value: 0 },
       hasGuide: false,
       guide: { enabled: false, title: "", sections: [] },
@@ -1605,7 +1606,14 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
                             helpText="Placeholder text shown in the width input field"
                           />
 
-                          {/* Has Guide Section Checkbox */}
+                          <TextField
+                            label="Height Input Placeholder"
+                            value={block.heightPlaceholder || ""}
+                            onChange={(v) => updateBlock(idx, { heightPlaceholder: v })}
+                            helpText="Placeholder text shown in the height input field"
+                          />
+
+                          {/* Has Guide Section Checkbox */
                           <Checkbox
                             label="Has Guide Section"
                             checked={!!block.hasGuide}
