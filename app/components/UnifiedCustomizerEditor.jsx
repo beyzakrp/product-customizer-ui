@@ -1613,7 +1613,7 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
                             helpText="Placeholder text shown in the height input field"
                           />
 
-                          {/* Has Guide Section Checkbox */
+                          {/* Has Guide Section Checkbox */}
                           <Checkbox
                             label="Has Guide Section"
                             checked={!!block.hasGuide}
