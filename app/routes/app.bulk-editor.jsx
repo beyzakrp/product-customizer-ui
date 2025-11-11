@@ -445,6 +445,7 @@ export default function BulkEditor() {
     },
     hasInputSection: false,
     inputSection: { title: "", placeholder: "" },
+    hasGuide: false,
     guide: { enabled: false, title: "", sections: [] },
     isHasGuideImage: false,
     guideImageUrl: "",
@@ -555,6 +556,7 @@ export default function BulkEditor() {
               },
               hasInputSection: block.hasInputSection || false,
               inputSection: block.inputSection || { title: "", placeholder: "" },
+              hasGuide: block.hasGuide || block.guide?.enabled || false,
               guide: block.guide || { enabled: false, title: "", sections: [] },
               isHasGuideImage: block.isHasGuideImage || false,
               guideImageUrl: block.guideImageUrl || "",
@@ -1993,16 +1995,19 @@ export default function BulkEditor() {
 
                       {/* Guide Section */}
                       <Checkbox
-                        label="Enable Measurement Guide"
-                        checked={blockUpdates.guide?.enabled}
+                        label="Has Guide Section"
+                        checked={!!blockUpdates.hasGuide || !!blockUpdates.guide?.enabled}
                         onChange={(checked) => setBlockUpdates({ 
                           ...blockUpdates, 
+                          hasGuide: checked,
                           guide: { 
-                            ...blockUpdates.guide, 
+                            ...(blockUpdates.guide || {}), 
                             enabled: checked,
+                            title: blockUpdates.guide?.title || "",
                             sections: blockUpdates.guide?.sections || []
                           } 
                         })}
+                        helpText="Enable measurement guidelines and helpful information for customers"
                       />
 
                       {/* Guide Image */}
@@ -2038,15 +2043,19 @@ export default function BulkEditor() {
                         helpText="e.g., inch, cm, m"
                       />
 
-                      {blockUpdates.guide?.enabled && (
+                      {(blockUpdates.hasGuide || blockUpdates.guide?.enabled) && (
                         <BlockStack gap="400">
+                          <Banner tone="info">
+                            <p>Guide sections provide measurement guidelines and helpful information for customers.</p>
+                          </Banner>
+
                           <TextField
                             label="Guide Title"
                             value={blockUpdates.guide?.title || ""}
                             onChange={(value) => setBlockUpdates({ 
                               ...blockUpdates, 
                               guide: { 
-                                ...blockUpdates.guide, 
+                                ...(blockUpdates.guide || {}), 
                                 title: value 
                               } 
                             })}
