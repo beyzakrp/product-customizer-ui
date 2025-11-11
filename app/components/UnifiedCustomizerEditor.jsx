@@ -101,6 +101,14 @@ function createDefaultBlock(type) {
       widthPlaceholder: "Enter width",
       heightPlaceholder: "Enter height",
       pricing: { mode: "none", value: 0 },
+      hasRecommendation: false,
+      recommendation: {
+        enabled: false,
+        basedOn: "width",
+        multiplier: 2.5,
+        messageTemplate: "We will make your curtain {result} {unit} for a rich, luxurious fold.",
+        showAfterInput: true
+      },
       hasGuide: false,
       guide: { enabled: false, title: "", sections: [] },
       isHasGuideImage: false,
@@ -1613,6 +1621,87 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
                             helpText="Placeholder text shown in the height input field"
                           />
 
+                          {/* Recommendation Feature */}
+                          <Checkbox
+                            label="Enable Recommendation Message"
+                            checked={!!block.hasRecommendation || !!block.recommendation?.enabled}
+                            onChange={(v) => updateBlock(idx, { 
+                              hasRecommendation: v,
+                              recommendation: { 
+                                ...(block.recommendation || {}), 
+                                enabled: v,
+                                basedOn: block.recommendation?.basedOn || "width",
+                                multiplier: block.recommendation?.multiplier || 2.5,
+                                messageTemplate: block.recommendation?.messageTemplate || "We will make your curtain {result} {unit} for a rich, luxurious fold.",
+                                showAfterInput: block.recommendation?.showAfterInput !== false
+                              }
+                            })}
+                          />
+
+                          {(block.hasRecommendation || block.recommendation?.enabled) && (
+                            <BlockStack gap="300">
+                              <Select
+                                label="Based On"
+                                options={[
+                                  { label: "Width", value: "width" },
+                                  { label: "Height", value: "height" }
+                                ]}
+                                value={block.recommendation?.basedOn || "width"}
+                                onChange={(v) => updateBlock(idx, { 
+                                  recommendation: { 
+                                    ...(block.recommendation || {}), 
+                                    basedOn: v 
+                                  } 
+                                })}
+                                helpText="Which input field to use for calculation"
+                              />
+
+                              <TextField
+                                label="Multiplier"
+                                type="number"
+                                step="0.1"
+                                value={String(block.recommendation?.multiplier ?? 2.5)}
+                                onChange={(v) => updateBlock(idx, { 
+                                  recommendation: { 
+                                    ...(block.recommendation || {}), 
+                                    multiplier: parseFloat(v) || 2.5 
+                                  } 
+                                })}
+                                helpText="Formula: input × multiplier = result"
+                              />
+
+                              <TextField
+                                label="Message Template"
+                                value={block.recommendation?.messageTemplate || ""}
+                                onChange={(v) => updateBlock(idx, { 
+                                  recommendation: { 
+                                    ...(block.recommendation || {}), 
+                                    messageTemplate: v 
+                                  } 
+                                })}
+                                helpText="Use {result} for calculated value, {unit} for unit name, {input} for original input"
+                                multiline={2}
+                              />
+
+                              <Checkbox
+                                label="Show only after input"
+                                checked={block.recommendation?.showAfterInput !== false}
+                                onChange={(v) => updateBlock(idx, { 
+                                  recommendation: { 
+                                    ...(block.recommendation || {}), 
+                                    showAfterInput: v 
+                                  } 
+                                })}
+                                helpText="Display recommendation only when user enters a value"
+                              />
+
+                              <Banner tone="info">
+                                <p><strong>Example:</strong> Input: 100, Multiplier: 2.5, Result: 250</p>
+                                <p>Message: "We will make your curtain 250 inches for a rich, luxurious fold."</p>
+                              </Banner>
+                            </BlockStack>
+                          )}
+
                           {/* Has Guide Section Checkbox */}
                           <Checkbox
                             label="Has Guide Section"
@@ -1972,6 +2061,30 @@ export default function UnifiedCustomizerEditor({ initialValue = "[]", onSave, o
                             </div>
                           </InlineStack>
                           
+                          {/* Recommendation Message */}
+                          {(block.hasRecommendation || block.recommendation?.enabled) && (() => {
+                            const basedOn = block.recommendation?.basedOn || "width";
+                            const inputValue = parseFloat(preview[block.id]?.[basedOn]);
+                            const multiplier = block.recommendation?.multiplier || 2.5;
+                            const showAfterInput = block.recommendation?.showAfterInput !== false;
+                            
+                            if (!showAfterInput || (inputValue && !isNaN(inputValue))) {
+                              const result = (inputValue * multiplier).toFixed(1);
+                              const unitText = block.unit === 'cm' ? 'centimeters' : 'inches';
+                              const message = (block.recommendation?.messageTemplate || "")
+                                .replace('{result}', result)
+                                .replace('{unit}', unitText)
+                                .replace('{input}', String(inputValue));
+                              
+                              return (
+                                <Banner tone="info">
+                                  <p>{message}</p>
+                                </Banner>
+                              );
+                            }
+                            return null;
+                          })()}
+
                           {/* Input Section Preview */}
                           {block.hasInputSection && block.inputSection && (
                             <div style={{ width: 220 }}>

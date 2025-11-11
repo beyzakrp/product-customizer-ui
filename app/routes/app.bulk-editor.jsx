@@ -435,6 +435,14 @@ export default function BulkEditor() {
     limits: { width: { min: 0, max: 1000 } },
     widthPlaceholder: "Enter width",
     heightPlaceholder: "Enter height",
+    hasRecommendation: false,
+    recommendation: {
+      enabled: false,
+      basedOn: "width",
+      multiplier: 2.5,
+      messageTemplate: "We will make your curtain {result} {unit} for a rich, luxurious fold.",
+      showAfterInput: true
+    },
     hasInputSection: false,
     inputSection: { title: "", placeholder: "" },
     guide: { enabled: false, title: "", sections: [] },
@@ -537,6 +545,14 @@ export default function BulkEditor() {
               limits: block.limits || { width: { min: 0, max: 1000 } },
               widthPlaceholder: block.widthPlaceholder || "Enter width",
               heightPlaceholder: block.heightPlaceholder || "Enter height",
+              hasRecommendation: block.hasRecommendation || block.recommendation?.enabled || false,
+              recommendation: block.recommendation || {
+                enabled: false,
+                basedOn: "width",
+                multiplier: 2.5,
+                messageTemplate: "We will make your curtain {result} {unit} for a rich, luxurious fold.",
+                showAfterInput: true
+              },
               hasInputSection: block.hasInputSection || false,
               inputSection: block.inputSection || { title: "", placeholder: "" },
               guide: block.guide || { enabled: false, title: "", sections: [] },
@@ -1853,6 +1869,94 @@ export default function BulkEditor() {
                         })}
                         helpText="Placeholder text shown in the height input field (e.g., 'Enter height')"
                       />
+
+                      {/* Recommendation Feature */}
+                      <Checkbox
+                        label="Enable Recommendation Message"
+                        checked={blockUpdates.hasRecommendation || blockUpdates.recommendation?.enabled}
+                        onChange={(checked) => setBlockUpdates({ 
+                          ...blockUpdates, 
+                          hasRecommendation: checked,
+                          recommendation: {
+                            ...(blockUpdates.recommendation || {}),
+                            enabled: checked
+                          }
+                        })}
+                      />
+
+                      {(blockUpdates.hasRecommendation || blockUpdates.recommendation?.enabled) && (
+                        <BlockStack gap="300">
+                          <Select
+                            label="Based On"
+                            options={[
+                              { label: "Width", value: "width" },
+                              { label: "Height", value: "height" }
+                            ]}
+                            value={blockUpdates.recommendation?.basedOn || "width"}
+                            onChange={(value) => setBlockUpdates({ 
+                              ...blockUpdates, 
+                              recommendation: { 
+                                ...(blockUpdates.recommendation || {}), 
+                                basedOn: value 
+                              } 
+                            })}
+                            helpText="Which input field to use for calculation"
+                          />
+
+                          <TextField
+                            label="Multiplier"
+                            type="number"
+                            step="0.1"
+                            value={String(blockUpdates.recommendation?.multiplier ?? 2.5)}
+                            onChange={(value) => setBlockUpdates({ 
+                              ...blockUpdates, 
+                              recommendation: { 
+                                ...(blockUpdates.recommendation || {}), 
+                                multiplier: parseFloat(value) || 2.5 
+                              } 
+                            })}
+                            helpText="Formula: input × multiplier = result"
+                          />
+
+                          <TextField
+                            label="Message Template"
+                            value={blockUpdates.recommendation?.messageTemplate || ""}
+                            onChange={(value) => setBlockUpdates({ 
+                              ...blockUpdates, 
+                              recommendation: { 
+                                ...(blockUpdates.recommendation || {}), 
+                                messageTemplate: value 
+                              } 
+                            })}
+                            helpText="Use {result} for calculated value, {unit} for unit name, {input} for original input"
+                            multiline={2}
+                          />
+
+                          <Checkbox
+                            label="Show only after input"
+                            checked={blockUpdates.recommendation?.showAfterInput !== false}
+                            onChange={(checked) => setBlockUpdates({ 
+                              ...blockUpdates, 
+                              recommendation: { 
+                                ...(blockUpdates.recommendation || {}), 
+                                showAfterInput: checked 
+                              } 
+                            })}
+                            helpText="Display recommendation only when user enters a value"
+                          />
+
+                          <Banner tone="info">
+                            <BlockStack gap="100">
+                              <Text variant="bodyMd">
+                                <strong>Example:</strong> Input: 100, Multiplier: 2.5, Result: 250
+                              </Text>
+                              <Text variant="bodySm">
+                                Message: "We will make your curtain 250 inches for a rich, luxurious fold."
+                              </Text>
+                            </BlockStack>
+                          </Banner>
+                        </BlockStack>
+                      )}
 
                       <Checkbox
                         label="Enable Additional Input Section"
